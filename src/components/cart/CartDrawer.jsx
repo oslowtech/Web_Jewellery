@@ -4,7 +4,14 @@ import { useCart } from "../../context/CartContext.jsx";
 import CartItem from "./CartItem.jsx";
 import EmptyState from "../common/EmptyState.jsx";
 import { formatPrice } from "../../utils/format.js";
-import { calculateShipping, getShippingInfo, validatePincode } from "../../utils/shipping.js";
+import {
+  calculateShipping,
+  COD_LIMIT,
+  getShippingInfo,
+  isCodAvailable,
+  OFFER_THRESHOLD,
+  validatePincode,
+} from "../../utils/shipping.js";
 import { Link } from "react-router-dom";
 import { useState } from "react";
 
@@ -35,8 +42,11 @@ const CartDrawer = () => {
     setPincodeError("");
   };
 
-  const shipping = calculateShipping(pincode, total);
-  const isFreeShipping = total >= 1499;
+  const shippingInfo = pincode ? getShippingInfo(pincode) : null;
+  const shipping = pincode ? calculateShipping(pincode, total) : null;
+  const codAvailable = isCodAvailable(total);
+  const offerEligible = total >= OFFER_THRESHOLD;
+  const remainingForOffer = Math.max(0, OFFER_THRESHOLD - total);
 
   return (
     <AnimatePresence>
@@ -131,24 +141,18 @@ const CartDrawer = () => {
                       <>
                         <div className="flex items-center justify-between">
                           <span>
-                            {isFreeShipping ? (
-                              "Shipping"
-                            ) : (
-                              <>
-                                Shipping
-                                <span className="ml-1 text-xs text-stone">
-                                  (Free on orders ₹1499+)
-                                </span>
-                              </>
-                            )}
+                            Shipping
+                            {shippingInfo?.zone ? (
+                              <span className="ml-1 text-xs text-stone">
+                                ({shippingInfo.zone === "near" ? "Near" : "Far"})
+                              </span>
+                            ) : null}
                           </span>
-                          <span className="font-medium">
-                            {shipping === 0 ? "Free" : formatPrice(shipping)}
-                          </span>
+                          <span className="font-medium">{formatPrice(shipping ?? 0)}</span>
                         </div>
                         <div className="border-t border-white/70 pt-2 flex items-center justify-between font-semibold">
                           <span>Total</span>
-                          <span>{formatPrice(total + (shipping || 0))}</span>
+                          <span>{formatPrice(total + (shipping ?? 0))}</span>
                         </div>
                       </>
                     ) : (
@@ -158,6 +162,28 @@ const CartDrawer = () => {
                     )}
                   </div>
 
+                  <div className="rounded-2xl bg-white/70 p-3 text-xs text-stone">
+                    <p className={`font-medium ${codAvailable ? "text-onyx" : "text-rose"}`}>
+                      {codAvailable
+                        ? `Cash on Delivery available up to ₹${COD_LIMIT}.`
+                        : `Cash on Delivery not available above ₹${COD_LIMIT}.`}
+                    </p>
+                    <p className="mt-2 font-medium text-onyx">Lucky draw offer</p>
+                    <p className="mt-1">
+                      Spend ₹{OFFER_THRESHOLD}+ to get a chance to win Activa, iPhone, Smart
+                      TV, Iron, and more.
+                    </p>
+                    {offerEligible ? (
+                      <p className="mt-1 text-onyx">
+                        You&apos;re eligible for the lucky draw on this order.
+                      </p>
+                    ) : (
+                      <p className="mt-1">
+                        Add {formatPrice(remainingForOffer)} more to unlock the lucky draw
+                        entry.
+                      </p>
+                    )}
+                  </div>
                   <button
                     type="button"
                     className="w-full rounded-full bg-onyx py-3 text-sm text-white"

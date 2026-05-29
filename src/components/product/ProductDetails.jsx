@@ -3,6 +3,7 @@ import { useCart } from "../../context/CartContext.jsx";
 import { useToast } from "../../context/ToastContext.jsx";
 import { useWishlist } from "../../context/WishlistContext.jsx";
 import { formatPrice } from "../../utils/format.js";
+import { COD_LIMIT, DISPATCH_PINCODE, OFFER_THRESHOLD, SHIPPING_RATES } from "../../utils/shipping.js";
 import { handleWhatsAppInquiry } from "../../utils/whatsapp.js";
 
 const ProductDetails = ({ product }) => {
@@ -91,7 +92,8 @@ const ProductDetails = ({ product }) => {
         </button>
       </div>
       <div className="rounded-2xl border border-rose/40 bg-rose/10 p-4 text-xs text-stone">
-        Free delivery on orders above ₹1499 · Easy returns
+        Shipping ₹{SHIPPING_RATES.near} near {DISPATCH_PINCODE} · ₹{SHIPPING_RATES.far} far · COD
+        up to ₹{COD_LIMIT} · Spend ₹{OFFER_THRESHOLD}+ for lucky draw entry
       </div>
     </div>
   );

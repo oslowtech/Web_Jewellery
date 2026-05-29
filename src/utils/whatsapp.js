@@ -1,4 +1,4 @@
-import { calculateShipping } from "./shipping.js";
+import { calculateShipping, COD_LIMIT, isCodAvailable, OFFER_THRESHOLD } from "./shipping.js";
 
 export const handleWhatsAppInquiry = (product, notify, pincode = "") => {
   if (!product) return;
@@ -9,9 +9,18 @@ export const handleWhatsAppInquiry = (product, notify, pincode = "") => {
   if (pincode) {
     const shipping = calculateShipping(pincode, price);
     if (shipping !== null) {
-      message += `\nShipping: ₹${shipping > 0 ? shipping : "Free"}`;
-      message += `\nTotal: ₹${price + (shipping || 0)}`;
+      message += `\nShipping: ₹${shipping}`;
+      message += `\nTotal: ₹${price + shipping}`;
     }
+  }
+
+  const codAvailable = isCodAvailable(price);
+  const codMessage = codAvailable ? "Available" : `Not available above ₹${COD_LIMIT}`;
+  message += `\nCOD: ${codMessage}`;
+  if (price >= OFFER_THRESHOLD) {
+    message += "\nOffer: Eligible for lucky draw entry.";
+  } else {
+    message += `\nOffer: Spend ₹${OFFER_THRESHOLD}+ to enter lucky draw.`;
   }
 
   const phone = import.meta.env.VITE_WHATSAPP_NUMBER || "91XXXXXXXXXX";
@@ -32,7 +41,7 @@ export const handleWhatsAppInquiry = (product, notify, pincode = "") => {
 export const handleWhatsAppCartInquiry = (cart, total, pincode, notify) => {
   if (!cart?.length) return;
 
-  const { calculateShipping } = require("./shipping.js");
+  const { calculateShipping, COD_LIMIT, isCodAvailable, OFFER_THRESHOLD } = require("./shipping.js");
 
   let message = "Hello, I would like to place an order for the following items:\n\n";
 
@@ -46,11 +55,20 @@ export const handleWhatsAppCartInquiry = (cart, total, pincode, notify) => {
   if (pincode) {
     const shipping = calculateShipping(pincode, total);
     if (shipping !== null) {
-      message += `\nShipping (Pincode: ${pincode}): ₹${shipping > 0 ? shipping : "Free"}`;
-      message += `\nTotal: ₹${total + (shipping || 0)}`;
+      message += `\nShipping (Pincode: ${pincode}): ₹${shipping}`;
+      message += `\nTotal: ₹${total + shipping}`;
     }
   } else {
     message += `\nTotal: ₹${total}`;
+  }
+
+  const codAvailable = isCodAvailable(total);
+  const codMessage = codAvailable ? "Available" : `Not available above ₹${COD_LIMIT}`;
+  message += `\nCOD: ${codMessage}`;
+  if (total >= OFFER_THRESHOLD) {
+    message += "\nOffer: Eligible for lucky draw entry.";
+  } else {
+    message += `\nOffer: Spend ₹${OFFER_THRESHOLD}+ to enter lucky draw.`;
   }
 
   message += "\n\nPlease confirm the order.";
