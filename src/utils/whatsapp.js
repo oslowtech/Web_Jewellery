@@ -1,0 +1,64 @@
+import { calculateShipping } from "./shipping.js";
+
+export const handleWhatsAppInquiry = (product, notify, pincode = "") => {
+  if (!product) return;
+
+  const price = product.discountPrice || product.price;
+  let message = `Hello, I want to inquire about this jewellery item.\n\nProduct ID: ${product.id}\nProduct Name: ${product.name}\nPrice: ₹${price}`;
+
+  if (pincode) {
+    const shipping = calculateShipping(pincode, price);
+    if (shipping !== null) {
+      message += `\nShipping: ₹${shipping > 0 ? shipping : "Free"}`;
+      message += `\nTotal: ₹${price + (shipping || 0)}`;
+    }
+  }
+
+  const phone = import.meta.env.VITE_WHATSAPP_NUMBER || "91XXXXXXXXXX";
+
+  if (navigator.clipboard?.writeText) {
+    navigator.clipboard
+      .writeText(product.id)
+      .then(() => notify?.("Product ID copied successfully"))
+      .catch(() => notify?.("Unable to copy product ID"));
+  } else {
+    notify?.("Unable to copy product ID");
+  }
+
+  const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+  window.open(url, "_blank", "noopener,noreferrer");
+};
+
+export const handleWhatsAppCartInquiry = (cart, total, pincode, notify) => {
+  if (!cart?.length) return;
+
+  const { calculateShipping } = require("./shipping.js");
+
+  let message = "Hello, I would like to place an order for the following items:\n\n";
+
+  cart.forEach((item, index) => {
+    const price = item.discountPrice || item.price;
+    message += `${index + 1}. ${item.name} (ID: ${item.id}) - ${item.quantity}x ₹${price}\n`;
+  });
+
+  message += `\nSubtotal: ₹${total}`;
+
+  if (pincode) {
+    const shipping = calculateShipping(pincode, total);
+    if (shipping !== null) {
+      message += `\nShipping (Pincode: ${pincode}): ₹${shipping > 0 ? shipping : "Free"}`;
+      message += `\nTotal: ₹${total + (shipping || 0)}`;
+    }
+  } else {
+    message += `\nTotal: ₹${total}`;
+  }
+
+  message += "\n\nPlease confirm the order.";
+
+  const phone = import.meta.env.VITE_WHATSAPP_NUMBER || "91XXXXXXXXXX";
+
+  const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+  window.open(url, "_blank", "noopener,noreferrer");
+  notify?.("Order details sent to WhatsApp!");
+};
+

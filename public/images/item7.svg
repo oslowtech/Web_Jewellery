@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="800" viewBox="0 0 600 800">
+  <defs>
+    <linearGradient id="g7" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#FAF7F2"/>
+      <stop offset="100%" stop-color="#F8E7E7"/>
+    </linearGradient>
+  </defs>
+  <rect width="600" height="800" rx="32" fill="url(#g7)"/>
+  <circle cx="300" cy="280" r="120" fill="#E7B7B7" opacity="0.28"/>
+  <text x="50%" y="72%" text-anchor="middle" font-size="36" font-family="Inter, sans-serif" fill="#2F2A2A">Choker</text>
+  <text x="50%" y="78%" text-anchor="middle" font-size="24" font-family="Inter, sans-serif" fill="#6D5F5F">Royal</text>
+</svg>
