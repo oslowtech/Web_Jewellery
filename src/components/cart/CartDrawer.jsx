@@ -12,11 +12,16 @@ import {
   OFFER_THRESHOLD,
   validatePincode,
 } from "../../utils/shipping.js";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
+import { useAuth } from "../../context/AuthContext.jsx";
+import { useCheckout } from "../../context/CheckoutContext.jsx";
 
 const CartDrawer = () => {
   const { isOpen, closeCart, cart, removeItem, updateItem, total, pincode, setPincode } = useCart();
+  const { user } = useAuth();
+  const { actions: checkoutActions } = useCheckout();
+  const navigate = useNavigate();
   const [pincodeInput, setPincodeInput] = useState(pincode);
   const [pincodeError, setPincodeError] = useState("");
 
@@ -47,6 +52,12 @@ const CartDrawer = () => {
   const codAvailable = isCodAvailable(total);
   const offerEligible = total >= OFFER_THRESHOLD;
   const remainingForOffer = Math.max(0, OFFER_THRESHOLD - total);
+
+  const handleCheckout = () => {
+    checkoutActions.setCartItems(cart);
+    closeCart();
+    navigate(user ? "/checkout" : "/login");
+  };
 
   return (
     <AnimatePresence>
@@ -187,11 +198,12 @@ const CartDrawer = () => {
                   <button
                     type="button"
                     className="w-full rounded-full bg-onyx py-3 text-sm text-white"
+                    onClick={handleCheckout}
                   >
-                    Proceed to checkout
+                    Proceed to secure checkout
                   </button>
                   <p className="text-center text-xs text-stone">
-                    Checkout will be available with backend integration.
+                    Pay online securely with cards, UPI, netbanking, wallets, or EMI.
                   </p>
                 </div>
               )}

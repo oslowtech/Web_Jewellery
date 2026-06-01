@@ -1,6 +1,6 @@
 [
   {
-    "id": "JW1001",
+    "id": "JWN1001",
     "name": "Rose Gold Pearl Necklace",
     "price": 1299,
     "discountPrice": 999,
@@ -17,7 +17,7 @@
     "tags": ["wedding", "party", "premium"]
   },
   {
-    "id": "JW1002",
+    "id": "JN1002",
     "name": "Blush Pearl Drop Earrings",
     "price": 899,
     "discountPrice": 749,

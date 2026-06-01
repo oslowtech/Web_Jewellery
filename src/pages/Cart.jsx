@@ -1,5 +1,7 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useCart } from "../context/CartContext.jsx";
+import { useAuth } from "../context/AuthContext.jsx";
+import { useCheckout } from "../context/CheckoutContext.jsx";
 import CartItem from "../components/cart/CartItem.jsx";
 import EmptyState from "../components/common/EmptyState.jsx";
 import { formatPrice } from "../utils/format.js";
@@ -11,7 +13,19 @@ const Cart = () => {
     description: "Review your selected jewellery pieces and totals.",
   });
 
+  const navigate = useNavigate();
+  const { user } = useAuth();
   const { cart, removeItem, updateItem, total } = useCart();
+  const { actions: checkoutActions } = useCheckout();
+
+  const handleCheckout = () => {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+    checkoutActions.setCartItems(cart);
+    navigate('/checkout');
+  };
 
   return (
     <div className="mx-auto max-w-4xl space-y-6 px-4 py-8">
@@ -43,6 +57,12 @@ const Cart = () => {
             <span className="text-sm">Total</span>
             <span className="text-lg font-semibold">{formatPrice(total)}</span>
           </div>
+          <button
+            onClick={handleCheckout}
+            className="w-full bg-rose text-cream py-3 rounded-lg font-semibold hover:bg-opacity-90 transition mt-6"
+          >
+            Proceed to Checkout
+          </button>
         </div>
       )}
     </div>

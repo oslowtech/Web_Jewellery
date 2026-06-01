@@ -1,0 +1,517 @@
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext.jsx';
+import { useCart } from '../context/CartContext.jsx';
+import { useCheckout } from '../context/CheckoutContext.jsx';
+import { useOrder } from '../context/OrderContext.jsx';
+import { useToast } from '../context/ToastContext.jsx';
+import { fetchAddresses } from '../services/addressService.js';
+import { createOrder, validateOrderData } from '../services/orderService.js';
+import { initiateRazorpayPayment, loadRazorpaySDK, validatePaymentConfig } from '../services/paymentService.js';
+import { calculateShipping } from '../utils/shipping.js';
+import { formatPrice } from '../utils/format.js';
+
+const Checkout = () => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { cart, pincode, clearCart } = useCart();
+  const { state: checkoutState, actions: checkoutActions, totals, isCheckoutReady } = useCheckout();
+  const { actions: orderActions } = useOrder();
+  const { addToast } = useToast();
+
+  const [step, setStep] = useState(1);
+  const [addresses, setAddresses] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+
+    loadRazorpaySDK().catch(err => {
+      console.error('Razorpay SDK failed to load:', err);
+    });
+
+    loadAddresses();
+  }, [user, navigate]);
+
+  useEffect(() => {
+    checkoutActions.setCartItems(cart || []);
+  }, [cart, checkoutActions]);
+
+  useEffect(() => {
+    const subtotal = (cart || []).reduce((sum, item) => {
+      const unitPrice = item.discountPrice ?? item.discount_price ?? item.price;
+      return sum + unitPrice * item.quantity;
+    }, 0);
+    const shipping = pincode ? calculateShipping(pincode, subtotal) : 0;
+    checkoutActions.setShippingCharge(shipping ?? 0);
+  }, [cart, pincode, checkoutActions]);
+
+  const loadAddresses = async () => {
+    try {
+      const data = await fetchAddresses();
+      setAddresses(data);
+    } catch (err) {
+      console.error('Error loading addresses:', err);
+      addToast({ message: 'Failed to load addresses', type: 'error' });
+    }
+  };
+
+  const handleSelectBillingAddress = (address) => {
+    checkoutActions.setBillingAddress(address);
+  };
+
+  const handleSelectShippingAddress = (address) => {
+    checkoutActions.setShippingAddress(address);
+  };
+
+  const handleSetGifting = (giftData) => {
+    checkoutActions.setGifting(giftData);
+  };
+
+  const handlePlaceOrder = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Validate checkout state
+      if (!isCheckoutReady()) {
+        throw new Error('Please select both billing and shipping addresses');
+      }
+
+      // Prepare order data
+      const orderData = {
+        billingAddressId: checkoutState.billingAddress.id,
+        shippingAddressId: checkoutState.shippingAddress.id,
+        items: checkoutState.cartItems.map(item => {
+          const unitPrice = item.discountPrice ?? item.discount_price ?? item.price;
+          return {
+            productId: item.id,
+            productName: item.name,
+            quantity: item.quantity,
+            pricePerUnit: item.price,
+            discountPerUnit: Math.max(0, item.price - unitPrice),
+            totalPrice: unitPrice * item.quantity
+          };
+        }),
+        totalAmount: totals.totalAmount,
+        taxAmount: totals.taxAmount,
+        shippingCharge: totals.shippingCharge,
+        discountAmount: totals.discountAmount,
+        gifting: checkoutState.gifting.isGift
+          ? { ...checkoutState.gifting, is_gift: true }
+          : null
+      };
+
+      // Validate order
+      const validation = validateOrderData(orderData);
+      if (!validation.isValid) {
+        throw new Error(validation.errors.join(', '));
+      }
+
+      // Create order
+      const order = await createOrder(orderData);
+      orderActions.addOrder(order);
+
+      // Initiate payment
+      const paymentConfig = validatePaymentConfig();
+      if (!paymentConfig.isValid) {
+        throw new Error(paymentConfig.errors.join(', '));
+      }
+
+      await initiateRazorpayPayment({
+        orderId: order.id,
+        amount: totals.totalAmount,
+        orderNumber: order.order_number,
+        customerEmail: user.email,
+        customerPhone: checkoutState.billingAddress.phone,
+        customerName: checkoutState.billingAddress.full_name,
+        onSuccess: async (response) => {
+          // Clear cart and show success
+          clearCart();
+          addToast({
+            message: 'Payment successful! Your order has been placed.',
+            type: 'success'
+          });
+          navigate(`/order-confirmation/${order.id}`);
+        },
+        onError: async (err) => {
+          addToast({
+            message: `Payment failed: ${err.message}`,
+            type: 'error'
+          });
+        }
+      });
+    } catch (err) {
+      const message = err.message || 'Failed to process order';
+      setError(message);
+      addToast({ message, type: 'error' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!user) {
+    return null;
+  }
+
+  if (!checkoutState.cartItems || checkoutState.cartItems.length === 0) {
+    return (
+      <div className="min-h-screen bg-cream flex items-center justify-center py-8 px-4">
+        <div className="text-center">
+          <h1 className="text-3xl font-bold text-onyx mb-4">Your cart is empty</h1>
+          <p className="text-gray-600 mb-6">Add items before proceeding to checkout</p>
+          <button
+            onClick={() => navigate('/shop')}
+            className="bg-rose text-cream px-8 py-3 rounded-lg font-semibold hover:bg-opacity-90"
+          >
+            Continue Shopping
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-cream py-8 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-6xl mx-auto">
+        {/* Header */}
+        <h1 className="text-3xl font-bold text-onyx mb-8">Checkout</h1>
+
+        {/* Error */}
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-red-700">{error}</p>
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Main Content */}
+          <div className="lg:col-span-2">
+            {/* Step Indicator */}
+            <div className="mb-8">
+              <div className="flex justify-between mb-6">
+                {[1, 2, 3, 4].map(s => (
+                  <div
+                    key={s}
+                    className={`flex items-center ${s < 4 ? 'flex-1' : ''}`}
+                  >
+                    <div
+                      className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${
+                        s <= step
+                          ? 'bg-rose text-cream'
+                          : 'bg-gray-300 text-gray-600'
+                      }`}
+                    >
+                      {s}
+                    </div>
+                    {s < 4 && (
+                      <div
+                        className={`flex-1 h-1 mx-2 ${
+                          s < step ? 'bg-rose' : 'bg-gray-300'
+                        }`}
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
+              <div className="flex justify-between text-sm text-gray-600">
+                <span>Items</span>
+                <span>Billing</span>
+                <span>Shipping</span>
+                <span>Review</span>
+              </div>
+            </div>
+
+            {/* Step 1: Review Items */}
+            {step === 1 && (
+              <div className="bg-white p-6 rounded-lg border border-gray-200 mb-6">
+                <h2 className="text-xl font-semibold mb-4">Order Items</h2>
+                <div className="space-y-4">
+                  {checkoutState.cartItems.map(item => {
+                    const unitPrice = item.discountPrice ?? item.discount_price ?? item.price;
+                    const hasDiscount = unitPrice < item.price;
+
+                    return (
+                    <div key={item.id} className="flex justify-between items-center pb-4 border-b">
+                      <div>
+                        <p className="font-semibold text-onyx">{item.name}</p>
+                        <p className="text-sm text-gray-600">Qty: {item.quantity}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-semibold">
+                          {formatPrice(unitPrice * item.quantity)}
+                        </p>
+                        {hasDiscount ? (
+                          <p className="text-sm text-gray-500 line-through">
+                            {formatPrice(item.price * item.quantity)}
+                          </p>
+                        ) : null}
+                      </div>
+                    </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Step 2: Billing Address */}
+            {step === 2 && (
+              <div className="bg-white p-6 rounded-lg border border-gray-200 mb-6">
+                <h2 className="text-xl font-semibold mb-4">Billing Address</h2>
+                {addresses.length === 0 ? (
+                  <div className="text-center py-8">
+                    <p className="text-gray-600 mb-4">No addresses saved</p>
+                    <button
+                      onClick={() => navigate('/addresses')}
+                      className="text-rose hover:underline"
+                    >
+                      Add an address
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {addresses.map(address => (
+                      <label key={address.id} className="flex items-start p-4 border rounded-lg cursor-pointer hover:bg-gray-50">
+                        <input
+                          type="radio"
+                          name="billing"
+                          checked={checkoutState.billingAddress?.id === address.id}
+                          onChange={() => handleSelectBillingAddress(address)}
+                          className="mt-1 mr-4"
+                        />
+                        <div>
+                          <p className="font-semibold">{address.full_name}</p>
+                          <p className="text-sm text-gray-600">{address.street_address}</p>
+                          <p className="text-sm text-gray-600">
+                            {address.city}, {address.state} {address.postal_code}
+                          </p>
+                          <p className="text-sm text-gray-600">Phone: {address.phone}</p>
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Step 3: Shipping Address */}
+            {step === 3 && (
+              <div className="bg-white p-6 rounded-lg border border-gray-200 mb-6">
+                <h2 className="text-xl font-semibold mb-4">Shipping Address</h2>
+                <div className="space-y-3">
+                  {addresses.map(address => (
+                    <label key={address.id} className="flex items-start p-4 border rounded-lg cursor-pointer hover:bg-gray-50">
+                      <input
+                        type="radio"
+                        name="shipping"
+                        checked={checkoutState.shippingAddress?.id === address.id}
+                        onChange={() => handleSelectShippingAddress(address)}
+                        className="mt-1 mr-4"
+                      />
+                      <div>
+                        <p className="font-semibold">{address.full_name}</p>
+                        <p className="text-sm text-gray-600">{address.street_address}</p>
+                        <p className="text-sm text-gray-600">
+                          {address.city}, {address.state} {address.postal_code}
+                        </p>
+                        <p className="text-sm text-gray-600">Phone: {address.phone}</p>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+
+                {/* Gifting Options */}
+                <div className="mt-6 pt-6 border-t">
+                  <label className="flex items-center mb-4">
+                    <input
+                      type="checkbox"
+                      checked={checkoutState.gifting.isGift}
+                      onChange={(e) => handleSetGifting({ isGift: e.target.checked })}
+                      className="w-4 h-4 text-rose rounded"
+                    />
+                    <span className="ml-3 font-semibold">This is a gift</span>
+                  </label>
+
+                  {checkoutState.gifting.isGift && (
+                    <div className="space-y-4 bg-gray-50 p-4 rounded-lg">
+                      <input
+                        type="text"
+                        placeholder="Recipient's Name"
+                        value={checkoutState.gifting.recipientName}
+                        onChange={(e) => handleSetGifting({ recipientName: e.target.value })}
+                        className="w-full px-4 py-2 border rounded-lg"
+                      />
+                      <input
+                        type="tel"
+                        placeholder="Recipient's Phone"
+                        value={checkoutState.gifting.recipientPhone}
+                        onChange={(e) => handleSetGifting({ recipientPhone: e.target.value })}
+                        className="w-full px-4 py-2 border rounded-lg"
+                      />
+                      <input
+                        type="email"
+                        placeholder="Recipient's Email (Optional)"
+                        value={checkoutState.gifting.recipientEmail}
+                        onChange={(e) => handleSetGifting({ recipientEmail: e.target.value })}
+                        className="w-full px-4 py-2 border rounded-lg"
+                      />
+                      <textarea
+                        placeholder="Gift Message (Optional)"
+                        value={checkoutState.gifting.giftMessage}
+                        onChange={(e) => handleSetGifting({ giftMessage: e.target.value })}
+                        rows="3"
+                        className="w-full px-4 py-2 border rounded-lg resize-none"
+                      />
+                      <label className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={checkoutState.gifting.giftWrap}
+                          onChange={(e) => handleSetGifting({ giftWrap: e.target.checked })}
+                          className="w-4 h-4 text-rose rounded"
+                        />
+                        <span className="ml-2">Add gift wrapping (+₹50)</span>
+                      </label>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Step 4: Review & Place Order */}
+            {step === 4 && (
+              <div className="space-y-6">
+                {/* Order Summary */}
+                <div className="bg-white p-6 rounded-lg border border-gray-200">
+                  <h2 className="text-xl font-semibold mb-4">Order Summary</h2>
+                  <div className="space-y-2 text-sm">
+                    <p>
+                      <span className="text-gray-600">Subtotal:</span>
+                      <span className="float-right font-semibold">
+                        {formatPrice(totals.subtotal)}
+                      </span>
+                    </p>
+                    <p>
+                      <span className="text-gray-600">Tax (18%):</span>
+                      <span className="float-right font-semibold">
+                        {formatPrice(totals.taxAmount)}
+                      </span>
+                    </p>
+                    <p>
+                      <span className="text-gray-600">Shipping:</span>
+                      <span className="float-right font-semibold">
+                        {formatPrice(totals.shippingCharge)}
+                      </span>
+                    </p>
+                    {totals.discountAmount > 0 && (
+                      <p>
+                        <span className="text-gray-600">Discount:</span>
+                        <span className="float-right font-semibold text-green-600">
+                          -{formatPrice(totals.discountAmount)}
+                        </span>
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Addresses Review */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                  <div className="bg-white p-4 rounded-lg border border-gray-200">
+                    <h3 className="font-semibold mb-2">Billing Address</h3>
+                    <p className="text-sm text-gray-600">
+                      {checkoutState.billingAddress?.full_name}
+                      <br />
+                      {checkoutState.billingAddress?.street_address}
+                      <br />
+                      {checkoutState.billingAddress?.city}, {checkoutState.billingAddress?.state}
+                    </p>
+                  </div>
+                  <div className="bg-white p-4 rounded-lg border border-gray-200">
+                    <h3 className="font-semibold mb-2">Shipping Address</h3>
+                    <p className="text-sm text-gray-600">
+                      {checkoutState.shippingAddress?.full_name}
+                      <br />
+                      {checkoutState.shippingAddress?.street_address}
+                      <br />
+                      {checkoutState.shippingAddress?.city}, {checkoutState.shippingAddress?.state}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Navigation Buttons */}
+            <div className="flex gap-4 mt-8">
+              <button
+                onClick={() => setStep(Math.max(1, step - 1))}
+                className="flex-1 bg-gray-200 text-onyx py-3 rounded-lg font-semibold hover:bg-gray-300 disabled:opacity-50"
+                disabled={step === 1 || loading}
+              >
+                Previous
+              </button>
+              {step < 4 ? (
+                <button
+                  onClick={() => setStep(step + 1)}
+                  className="flex-1 bg-rose text-cream py-3 rounded-lg font-semibold hover:bg-opacity-90 disabled:opacity-50"
+                  disabled={
+                    (step === 2 && !checkoutState.billingAddress) ||
+                    (step === 3 && !checkoutState.shippingAddress) ||
+                    loading
+                  }
+                >
+                  Next
+                </button>
+              ) : (
+                <button
+                  onClick={handlePlaceOrder}
+                  className="flex-1 bg-rose text-cream py-3 rounded-lg font-semibold hover:bg-opacity-90 disabled:opacity-50"
+                  disabled={!isCheckoutReady() || loading}
+                >
+                  {loading ? 'Processing...' : `Pay ${formatPrice(totals.totalAmount)}`}
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Order Summary Sidebar */}
+          <div className="lg:col-span-1">
+            <div className="bg-white p-6 rounded-lg border border-gray-200 sticky top-24">
+              <h3 className="text-lg font-semibold mb-4">Order Total</h3>
+              <div className="space-y-3 text-sm mb-4">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Subtotal</span>
+                  <span>{formatPrice(totals.subtotal)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Tax</span>
+                  <span>{formatPrice(totals.taxAmount)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Shipping</span>
+                  <span>{formatPrice(totals.shippingCharge)}</span>
+                </div>
+                {totals.discountAmount > 0 && (
+                  <div className="flex justify-between text-green-600">
+                    <span>Discount</span>
+                    <span>-{formatPrice(totals.discountAmount)}</span>
+                  </div>
+                )}
+              </div>
+              <div className="border-t pt-4">
+                <div className="flex justify-between font-bold text-lg">
+                  <span>Total</span>
+                  <span>{formatPrice(totals.totalAmount)}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Checkout;

@@ -16,3 +16,11 @@ export const writeStorage = (key, value, storage = localStorage) => {
   }
 };
 
+export const removeStorage = (key, storage = localStorage) => {
+  try {
+    storage.removeItem(key);
+  } catch (error) {
+    console.error("Storage remove failed", error);
+  }
+};
+

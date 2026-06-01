@@ -5,7 +5,10 @@ const ToastContext = createContext(null);
 export const ToastProvider = ({ children }) => {
   const [toasts, setToasts] = useState([]);
 
-  const addToast = (message) => {
+  const addToast = (input) => {
+    const message = typeof input === 'string' ? input : input?.message;
+    if (!message) return;
+
     const id = `${Date.now()}-${Math.random()}`;
     setToasts((prev) => [...prev, { id, message }]);
     setTimeout(() => {

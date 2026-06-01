@@ -1,5 +1,14 @@
 import { calculateShipping, COD_LIMIT, isCodAvailable, OFFER_THRESHOLD } from "./shipping.js";
 
+const buildOrderPolicyMessage = () =>
+  [
+    "Order policy:",
+    "- Please confirm your delivery details before placing the order.",
+    "- Report damaged, missing, or wrong items within 48 hours of delivery.",
+    "- Returns and replacements are subject to verification and item condition.",
+    "- Shipping charges are calculated by pincode.",
+  ].join("\n");
+
 export const handleWhatsAppInquiry = (product, notify, pincode = "") => {
   if (!product) return;
 
@@ -23,6 +32,8 @@ export const handleWhatsAppInquiry = (product, notify, pincode = "") => {
     message += `\nOffer: Spend ₹${OFFER_THRESHOLD}+ to enter lucky draw.`;
   }
 
+  message += `\n\n${buildOrderPolicyMessage()}`;
+
   const phone = import.meta.env.VITE_WHATSAPP_NUMBER || "91XXXXXXXXXX";
 
   if (navigator.clipboard?.writeText) {
@@ -40,8 +51,6 @@ export const handleWhatsAppInquiry = (product, notify, pincode = "") => {
 
 export const handleWhatsAppCartInquiry = (cart, total, pincode, notify) => {
   if (!cart?.length) return;
-
-  const { calculateShipping, COD_LIMIT, isCodAvailable, OFFER_THRESHOLD } = require("./shipping.js");
 
   let message = "Hello, I would like to place an order for the following items:\n\n";
 
@@ -71,6 +80,7 @@ export const handleWhatsAppCartInquiry = (cart, total, pincode, notify) => {
     message += `\nOffer: Spend ₹${OFFER_THRESHOLD}+ to enter lucky draw.`;
   }
 
+  message += `\n\n${buildOrderPolicyMessage()}`;
   message += "\n\nPlease confirm the order.";
 
   const phone = import.meta.env.VITE_WHATSAPP_NUMBER || "91XXXXXXXXXX";

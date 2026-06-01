@@ -1,26 +1,32 @@
 import { Heart, ShoppingBag } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { useCart } from "../../context/CartContext.jsx";
-import { useToast } from "../../context/ToastContext.jsx";
 import { useWishlist } from "../../context/WishlistContext.jsx";
 import { formatPrice } from "../../utils/format.js";
 import { COD_LIMIT, DISPATCH_PINCODE, OFFER_THRESHOLD, SHIPPING_RATES } from "../../utils/shipping.js";
-import { handleWhatsAppInquiry } from "../../utils/whatsapp.js";
 
 const ProductDetails = ({ product }) => {
-  const { addItem, openCart, pincode } = useCart();
-  const { addToast } = useToast();
+  const navigate = useNavigate();
+  const { addItem, openCart } = useCart();
   const { toggle, isWished } = useWishlist();
 
-  const handleAdd = () => {
-    addItem({
+  const cartItem = {
       id: product.id,
       name: product.name,
       price: product.price,
       discountPrice: product.discountPrice,
       image: product.images[0],
       category: product.category,
-    });
+  };
+
+  const handleAdd = () => {
+    addItem(cartItem);
     openCart();
+  };
+
+  const handleBuyNow = () => {
+    addItem(cartItem);
+    navigate("/checkout");
   };
 
   return (
@@ -79,16 +85,9 @@ const ProductDetails = ({ product }) => {
         <button
           type="button"
           className="sm:col-span-2 rounded-full bg-rose px-4 py-3 text-sm text-white"
-          onClick={() => handleWhatsAppInquiry(product, addToast, pincode)}
+          onClick={handleBuyNow}
         >
-          Order on WhatsApp
-        </button>
-        <button
-          type="button"
-          className="sm:col-span-2 rounded-full border border-rose/50 px-4 py-3 text-sm text-onyx"
-          onClick={() => handleWhatsAppInquiry(product, addToast, pincode)}
-        >
-          Inquiry on WhatsApp
+          Buy now
         </button>
       </div>
       <div className="rounded-2xl border border-rose/40 bg-rose/10 p-4 text-xs text-stone">
