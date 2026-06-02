@@ -55,6 +55,8 @@ export const AuthProvider = ({ children }) => {
 
     const { data } = supabase.auth.onAuthStateChange(async (event, nextSession) => {
       if (!mounted) return;
+      // Ignore INITIAL_SESSION to prevent prematurely dropping the loading state
+      if (event === "INITIAL_SESSION") return;
 
       setSession(nextSession || null);
       const nextUser = nextSession?.user || null;
@@ -70,8 +72,6 @@ export const AuthProvider = ({ children }) => {
       } else {
         setProfile(null);
       }
-
-      setLoading(false);
     });
 
     return () => {
