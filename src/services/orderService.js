@@ -52,6 +52,8 @@ export async function createOrder(orderData) {
       taxAmount = 0,
       shippingCharge = 0,
       discountAmount = 0,
+      giftWrapFee = 0,
+      codFee = 0,
       gifting = null
     } = orderData;
 
@@ -91,6 +93,8 @@ export async function createOrder(orderData) {
     const sanitizedTaxAmount = sanitizePrice(taxAmount);
     const sanitizedShippingCharge = sanitizePrice(shippingCharge);
     const sanitizedDiscountAmount = sanitizePrice(discountAmount);
+    const sanitizedGiftWrapFee = sanitizePrice(giftWrapFee);
+    const sanitizedCodFee = sanitizePrice(codFee);
 
     if (sanitizedTotalAmount === null) {
       logSecurityEvent('order_validation_failed', {
@@ -114,6 +118,8 @@ export async function createOrder(orderData) {
           tax_amount: sanitizedTaxAmount,
           shipping_charge: sanitizedShippingCharge,
           discount_amount: sanitizedDiscountAmount,
+          gift_wrap_fee: sanitizedGiftWrapFee,
+          cod_fee: sanitizedCodFee,
           status: 'pending',
           payment_status: 'pending'
         }

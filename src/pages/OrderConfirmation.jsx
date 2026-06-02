@@ -108,10 +108,51 @@ const OrderConfirmation = () => {
                 <p className="font-semibold">{formatPrice(item.total_price)}</p>
               </div>
             ))}
+            <div className="p-4 text-sm space-y-2">
+              <div className="flex justify-between text-stone">
+                <span>Subtotal (Incl. taxes)</span>
+                <span>{formatPrice(order.total_amount - order.shipping_charge - (order.gift_wrap_fee || 0) - (order.cod_fee || 0) + order.discount_amount)}</span>
+              </div>
+              <div className="flex justify-between text-stone">
+                <span>Tax (Included)</span>
+                <span>{formatPrice(order.tax_amount)}</span>
+              </div>
+              {order.shipping_charge > 0 && (
+                <div className="flex justify-between text-stone">
+                  <span>Shipping</span>
+                  <span>{formatPrice(order.shipping_charge)}</span>
+                </div>
+              )}
+              {order.gift_wrap_fee > 0 && (
+                <div className="flex justify-between text-stone">
+                  <span>Gift Wrap</span>
+                  <span>{formatPrice(order.gift_wrap_fee)}</span>
+                </div>
+              )}
+              {order.cod_fee > 0 && (
+                <div className="flex justify-between text-stone">
+                  <span>COD Fee</span>
+                  <span>{formatPrice(order.cod_fee)}</span>
+                </div>
+              )}
+              {order.discount_amount > 0 && (
+                <div className="flex justify-between text-green-600">
+                  <span>Discount</span>
+                  <span>-{formatPrice(order.discount_amount)}</span>
+                </div>
+              )}
+              <div className="flex justify-between font-semibold pt-2 border-t text-onyx">
+                <span>Total Paid</span>
+                <span>{formatPrice(order.total_amount)}</span>
+              </div>
+            </div>
           </div>
         </div>
 
-        <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+        <div className="mt-6 flex flex-col gap-3 sm:flex-row print:hidden">
+          <button onClick={() => window.print()} className="inline-flex justify-center rounded-lg bg-onyx px-5 py-3 text-sm font-semibold text-white">
+            Download Invoice
+          </button>
           <Link to="/orders" className="inline-flex justify-center rounded-lg bg-onyx px-5 py-3 text-sm font-semibold text-white">
             Track order
           </Link>

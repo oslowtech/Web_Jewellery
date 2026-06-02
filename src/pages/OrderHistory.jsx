@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useOrder } from '../context/OrderContext.jsx';
 import { useToast } from '../context/ToastContext.jsx';
+import { formatPrice } from '../utils/format.js';
 
 const ORDER_STATUS_COLORS = {
   pending: 'bg-yellow-100 text-yellow-800',
@@ -185,7 +186,7 @@ const OrderHistory = () => {
                   <div className="mb-4 sm:mb-0">
                     <p className="text-sm text-gray-600">Total Amount</p>
                     <p className="text-lg font-bold text-onyx">
-                      ₹{order.total_amount.toFixed(2)}
+                      {formatPrice(order.total_amount)}
                     </p>
                   </div>
 

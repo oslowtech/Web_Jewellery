@@ -101,6 +101,8 @@ const Checkout = () => {
         taxAmount: totals.taxAmount,
         shippingCharge: totals.shippingCharge,
         discountAmount: totals.discountAmount,
+        giftWrapFee: totals.giftWrapFee,
+        codFee: codFee,
         gifting: checkoutState.gifting.isGift
           ? { ...checkoutState.gifting, is_gift: true }
           : null
@@ -366,13 +368,13 @@ const Checkout = () => {
                   <h2 className="text-xl font-semibold mb-4">Order Summary</h2>
                   <div className="space-y-2 text-sm">
                     <p>
-                      <span className="text-gray-600">Subtotal:</span>
+                      <span className="text-gray-600">Subtotal (Incl. taxes):</span>
                       <span className="float-right font-semibold">
                         {formatPrice(totals.subtotal)}
                       </span>
                     </p>
                     <p>
-                      <span className="text-gray-600">Tax (18%):</span>
+                      <span className="text-gray-600">Tax ({Math.round(checkoutState.taxRate * 100)}% Included):</span>
                       <span className="float-right font-semibold">
                         {formatPrice(totals.taxAmount)}
                       </span>
@@ -383,6 +385,14 @@ const Checkout = () => {
                         {formatPrice(totals.shippingCharge)}
                       </span>
                     </p>
+                    {totals.giftWrapFee > 0 && (
+                      <p>
+                        <span className="text-gray-600">Gift Wrap:</span>
+                        <span className="float-right font-semibold">
+                          {formatPrice(totals.giftWrapFee)}
+                        </span>
+                      </p>
+                    )}
                     {totals.discountAmount > 0 && (
                       <p>
                         <span className="text-gray-600">Discount:</span>
@@ -480,17 +490,23 @@ const Checkout = () => {
               <h3 className="text-lg font-semibold mb-4">Order Total</h3>
               <div className="space-y-3 text-sm mb-4">
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Subtotal</span>
+                  <span className="text-gray-600">Subtotal (Incl. taxes)</span>
                   <span>{formatPrice(totals.subtotal)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Tax</span>
+                  <span className="text-gray-600">Tax (Included)</span>
                   <span>{formatPrice(totals.taxAmount)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Shipping</span>
                   <span>{formatPrice(totals.shippingCharge)}</span>
                 </div>
+                {totals.giftWrapFee > 0 && (
+                  <div className="flex justify-between text-gray-600">
+                    <span>Gift Wrap</span>
+                    <span>{formatPrice(totals.giftWrapFee)}</span>
+                  </div>
+                )}
             {paymentMethod === PAYMENT_METHODS.COD && (
               <div className="flex justify-between text-gray-600">
                 <span>COD Fee</span>

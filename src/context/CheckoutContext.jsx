@@ -177,22 +177,25 @@ export const CheckoutProvider = ({ children }) => {
   }, []);
 
   // Calculate totals
-  const totals = {
-    subtotal: state.cartItems.reduce(
-      (sum, item) => {
-        const unitPrice = item.discountPrice ?? item.discount_price ?? item.price;
-        return sum + unitPrice * item.quantity;
-      },
-      0
-    ),
-    taxAmount: 0, // Will be calculated
-    shippingCharge: state.shippingCharge,
-    discountAmount: state.discountAmount,
-    totalAmount: 0 // Will be calculated
-  };
+  const subtotal = state.cartItems.reduce(
+    (sum, item) => {
+      const unitPrice = item.discountPrice ?? item.discount_price ?? item.price;
+      return sum + unitPrice * item.quantity;
+    },
+    0
+  );
+  const baseAmount = subtotal / (1 + state.taxRate);
+  const taxAmount = subtotal - baseAmount;
+  const giftWrapFee = state.gifting.isGift && state.gifting.giftWrap ? 50 : 0;
 
-  totals.taxAmount = totals.subtotal * state.taxRate;
-  totals.totalAmount = totals.subtotal + totals.taxAmount + totals.shippingCharge - totals.discountAmount;
+  const totals = {
+    subtotal,
+    taxAmount,
+    shippingCharge: state.shippingCharge,
+    giftWrapFee,
+    discountAmount: state.discountAmount,
+    totalAmount: subtotal + state.shippingCharge + giftWrapFee - state.discountAmount
+  };
 
   // Validation helpers
   const isCheckoutReady = useCallback(() => {
