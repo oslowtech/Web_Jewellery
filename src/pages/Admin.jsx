@@ -30,7 +30,7 @@ const createEmptyForm = () => ({
 const PRODUCTS_CACHE_KEY = "products_cache";
 
 const buildProductId = (name) => {
-  const base = name
+  const base = (name || "")
     .trim()
     .toUpperCase()
     .replace(/[^A-Z0-9]+/g, "")
@@ -123,36 +123,36 @@ const Admin = () => {
     setError("");
     setSuccess("");
 
-    const nextId = form.id.trim() || buildProductId(form.name);
-    const payload = {
-      id: nextId,
-      name: form.name.trim(),
-      price: Number(form.price),
-      discountPrice: form.discountPrice ? Number(form.discountPrice) : null,
-      category: form.category.trim(),
-      subCategory: form.subCategory.trim(),
-      gender: form.gender,
-      description: form.description.trim(),
-      material: form.material.trim(),
-      imageUrls: (form.imageUrls || "")
-        .split(",")
-        .map((item) => item.trim())
-        .filter(Boolean),
-      imageFiles: (form.imageFiles || "")
-        .split(",")
-        .map((item) => item.trim())
-        .filter(Boolean),
-      tags: (form.tags || "")
-        .split(",")
-        .map((item) => item.trim())
-        .filter(Boolean),
-      stock: Boolean(form.stock),
-      featured: Boolean(form.featured),
-      isNew: Boolean(form.isNew),
-      bestSeller: Boolean(form.bestSeller),
-    };
-
     try {
+      const nextId = (form.id || "").trim() || buildProductId(form.name || "");
+      const payload = {
+        id: nextId,
+        name: (form.name || "").trim(),
+        price: Number(form.price),
+        discountPrice: form.discountPrice ? Number(form.discountPrice) : null,
+        category: (form.category || "").trim(),
+        subCategory: (form.subCategory || "").trim(),
+        gender: form.gender,
+        description: (form.description || "").trim(),
+        material: (form.material || "").trim(),
+        imageUrls: (form.imageUrls || "")
+          .split(",")
+          .map((item) => item.trim())
+          .filter(Boolean),
+        imageFiles: (form.imageFiles || "")
+          .split(",")
+          .map((item) => item.trim())
+          .filter(Boolean),
+        tags: (form.tags || "")
+          .split(",")
+          .map((item) => item.trim())
+          .filter(Boolean),
+        stock: Boolean(form.stock),
+        featured: Boolean(form.featured),
+        isNew: Boolean(form.isNew),
+        bestSeller: Boolean(form.bestSeller),
+      };
+
       await saveProduct(payload);
       clearProductsCache();
       setSuccess(`Saved ${payload.name} (${payload.id})`);
