@@ -5,11 +5,24 @@
  */
 export function extractDriveDirectLink(url) {
   if (!url) return '';
-  if (!url.includes("drive.google.com/file/d/")) return url;
   
-  const fileIdMatch = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
-  if (fileIdMatch && fileIdMatch[1]) {
-    return `https://drive.google.com/uc?export=view&id=${fileIdMatch[1]}`;
+  let fileId = null;
+
+  // Extract ID from standard Google Drive share link
+  if (url.includes("drive.google.com/file/d/")) {
+    const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+    if (match) fileId = match[1];
+  } 
+  // Extract ID from already converted 'uc' links (fixes already saved products)
+  else if (url.includes("drive.google.com/uc") && url.includes("id=")) {
+    const match = url.match(/id=([a-zA-Z0-9_-]+)/);
+    if (match) fileId = match[1];
   }
+  
+  if (fileId) {
+    // Use the thumbnail endpoint to bypass Google Drive's embedding restrictions (sz=w1000 means up to 1000px width)
+    return `https://drive.google.com/thumbnail?id=${fileId}&sz=w1000`;
+  }
+
   return url;
 }
