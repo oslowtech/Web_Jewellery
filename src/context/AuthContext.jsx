@@ -10,6 +10,14 @@ import {
 } from "../services/authService.js";
 import { isSupabaseConfigured, supabase } from "../lib/supabase.js";
 
+// Suppress all console logs in production to clean up the browser console
+if (import.meta.env.PROD) {
+  console.log = () => {};
+  console.info = () => {};
+  console.warn = () => {};
+  console.error = () => {};
+}
+
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
