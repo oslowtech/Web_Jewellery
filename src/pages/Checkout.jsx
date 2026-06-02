@@ -7,7 +7,7 @@ import { useOrder } from '../context/OrderContext.jsx';
 import { useToast } from '../context/ToastContext.jsx';
 import { fetchAddresses } from '../services/addressService.js';
 import { createOrder, validateOrderData } from '../services/orderService.js';
-import { initiateRazorpayPayment, loadRazorpaySDK, validatePaymentConfig } from '../services/paymentService.js';
+import { PAYMENT_METHODS, finalizeManualOrder, generateWhatsAppOrderLink } from '../services/paymentService.js';
 import { calculateShipping } from '../utils/shipping.js';
 import { formatPrice } from '../utils/format.js';
 
@@ -23,16 +23,13 @@ const Checkout = () => {
   const [addresses, setAddresses] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [paymentMethod, setPaymentMethod] = useState(PAYMENT_METHODS.PREPAID);
 
   useEffect(() => {
     if (!user) {
       navigate('/login');
       return;
     }
-
-    loadRazorpaySDK().catch(err => {
-      console.error('Razorpay SDK failed to load:', err);
-    });
 
     loadAddresses();
   }, [user, navigate]);
@@ -81,6 +78,8 @@ const Checkout = () => {
       if (!isCheckoutReady()) {
         throw new Error('Please select both billing and shipping addresses');
       }
+      
+      const codFee = paymentMethod === PAYMENT_METHODS.COD ? 50 : 0;
 
       // Prepare order data
       const orderData = {
@@ -97,7 +96,7 @@ const Checkout = () => {
             totalPrice: unitPrice * item.quantity
           };
         }),
-        totalAmount: totals.totalAmount,
+        totalAmount: totals.totalAmount + codFee,
         taxAmount: totals.taxAmount,
         shippingCharge: totals.shippingCharge,
         discountAmount: totals.discountAmount,
@@ -116,35 +115,12 @@ const Checkout = () => {
       const order = await createOrder(orderData);
       orderActions.addOrder(order);
 
-      // Initiate payment
-      const paymentConfig = validatePaymentConfig();
-      if (!paymentConfig.isValid) {
-        throw new Error(paymentConfig.errors.join(', '));
-      }
-
-      await initiateRazorpayPayment({
-        orderId: order.id,
-        amount: totals.totalAmount,
-        orderNumber: order.order_number,
-        customerEmail: user.email,
-        customerPhone: checkoutState.billingAddress.phone,
-        customerName: checkoutState.billingAddress.full_name,
-        onSuccess: async (response) => {
-          // Clear cart and show success
-          clearCart();
-          addToast({
-            message: 'Payment successful! Your order has been placed.',
-            type: 'success'
-          });
-          navigate(`/order-confirmation/${order.id}`);
-        },
-        onError: async (err) => {
-          addToast({
-            message: `Payment failed: ${err.message}`,
-            type: 'error'
-          });
-        }
-      });
+      // Finalize manual order and redirect to WhatsApp
+      const finalizedOrder = await finalizeManualOrder(order.id, paymentMethod);
+      clearCart();
+      
+      const whatsappUrl = generateWhatsAppOrderLink(finalizedOrder, paymentMethod);
+      window.location.href = whatsappUrl;
     } catch (err) {
       const message = err.message || 'Failed to process order';
       setError(message);
@@ -440,6 +416,27 @@ const Checkout = () => {
                     </p>
                   </div>
                 </div>
+
+            {/* Payment Method */}
+            <div className="bg-white p-6 rounded-lg border border-gray-200 mt-6">
+              <h2 className="text-xl font-semibold mb-4">Payment Method</h2>
+              <div className="space-y-3">
+                <label className="flex items-start p-4 border rounded-lg cursor-pointer hover:bg-gray-50">
+                  <input type="radio" name="paymentMethod" checked={paymentMethod === PAYMENT_METHODS.PREPAID} onChange={() => setPaymentMethod(PAYMENT_METHODS.PREPAID)} className="mt-1 mr-4" />
+                  <div>
+                    <p className="font-semibold">Prepaid (UPI / Cards / NetBanking)</p>
+                    <p className="text-sm text-gray-600">We will share a payment link via WhatsApp.</p>
+                  </div>
+                </label>
+                <label className="flex items-start p-4 border rounded-lg cursor-pointer hover:bg-gray-50">
+                  <input type="radio" name="paymentMethod" checked={paymentMethod === PAYMENT_METHODS.COD} onChange={() => setPaymentMethod(PAYMENT_METHODS.COD)} className="mt-1 mr-4" />
+                  <div>
+                    <p className="font-semibold">Cash on Delivery (COD)</p>
+                    <p className="text-sm text-gray-600">Pay when your order arrives. (+₹50 COD Fee)</p>
+                  </div>
+                </label>
+              </div>
+            </div>
               </div>
             )}
 
@@ -470,7 +467,7 @@ const Checkout = () => {
                   className="flex-1 bg-rose text-cream py-3 rounded-lg font-semibold hover:bg-opacity-90 disabled:opacity-50"
                   disabled={!isCheckoutReady() || loading}
                 >
-                  {loading ? 'Processing...' : `Pay ${formatPrice(totals.totalAmount)}`}
+              {loading ? 'Processing...' : `Place Order • ${formatPrice(totals.totalAmount + (paymentMethod === PAYMENT_METHODS.COD ? 50 : 0))}`}
                 </button>
               )}
             </div>
@@ -493,6 +490,12 @@ const Checkout = () => {
                   <span className="text-gray-600">Shipping</span>
                   <span>{formatPrice(totals.shippingCharge)}</span>
                 </div>
+            {paymentMethod === PAYMENT_METHODS.COD && (
+              <div className="flex justify-between text-gray-600">
+                <span>COD Fee</span>
+                <span>{formatPrice(50)}</span>
+              </div>
+            )}
                 {totals.discountAmount > 0 && (
                   <div className="flex justify-between text-green-600">
                     <span>Discount</span>
@@ -503,7 +506,7 @@ const Checkout = () => {
               <div className="border-t pt-4">
                 <div className="flex justify-between font-bold text-lg">
                   <span>Total</span>
-                  <span>{formatPrice(totals.totalAmount)}</span>
+              <span>{formatPrice(totals.totalAmount + (paymentMethod === PAYMENT_METHODS.COD ? 50 : 0))}</span>
                 </div>
               </div>
             </div>
