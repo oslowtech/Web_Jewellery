@@ -37,24 +37,16 @@ export const AuthProvider = ({ children }) => {
       };
     }
 
-    // 1. Manually fetch session first to ensure we securely get it on load
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
     // Fetch initial session and profile safely outside of auth listeners
     supabase.auth.getSession().then(async ({ data: { session }, error }) => {
       if (!mounted) return;
-      const currentUser = session?.user || null;
       if (error) console.error("Session error:", error);
 
       setSession(session);
-      setUser(currentUser);
-      if (currentUser) {
       setUser(session?.user || null);
 
       if (session?.user) {
         try {
-          setProfile(await getProfile(currentUser));
-        } catch (e) {
-          setProfile(null);
           setProfile(await getProfile(session.user));
         } catch (err) {
           console.error("Profile fetch error:", err);
@@ -64,34 +56,15 @@ export const AuthProvider = ({ children }) => {
       setLoading(false);
     });
 
-    const { data } = supabase.auth.onAuthStateChange(async (event, nextSession) => {
     // Synchronous listener for auth changes (prevents deadlocks!)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, nextSession) => {
       if (!mounted) return;
-      // Ignore INITIAL_SESSION to prevent prematurely dropping the loading state
-      if (event === "INITIAL_SESSION") return;
-
-      setSession(nextSession || null);
-      const nextUser = nextSession?.user || null;
-      setUser(nextUser);
-
-      if (nextUser) {
-        try {
-          setProfile(await getProfile(nextUser));
-        } catch (profileError) {
-          setError(profileError.message || "Unable to load profile.");
-          setProfile(null);
-        }
-      } else {
-        setProfile(null);
-      }
       setSession(nextSession);
       setUser(nextSession?.user || null);
     });
 
     return () => {
       mounted = false;
-      data?.subscription?.unsubscribe();
       subscription?.unsubscribe();
     };
   }, []);
