@@ -21,20 +21,23 @@ const orderReducer = (state, action) => {
       return {
         ...state,
         orders: action.payload,
-        error: null
+        error: null,
+        loading: false
       };
 
     case 'SET_CURRENT_ORDER':
       return {
         ...state,
         currentOrder: action.payload,
-        error: null
+        error: null,
+        loading: false
       };
 
     case 'SET_ORDER_HISTORY':
       return {
         ...state,
-        orderHistory: action.payload
+        orderHistory: action.payload,
+        loading: false
       };
 
     case 'ADD_ORDER':
