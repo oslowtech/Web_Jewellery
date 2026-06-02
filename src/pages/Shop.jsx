@@ -97,10 +97,17 @@ const Shop = () => {
           height: 4px;
         }
         
+        /* Fix for native stacked dual-inputs (if you used absolute positioning) */
+        input[type="range"].absolute {
+          top: 50%;
+          transform: translateY(-50%);
+        }
+
         /* 2. For custom div-based dual-thumb sliders (if you used a library) */
         .slider-thumb, .thumb, [role="slider"], .rc-slider-handle {
-          /* Centers the marker exactly on its calculated value percentage */
-          transform: translateX(-50%) !important; 
+          /* Centers the marker perfectly on both X and Y axis */
+          transform: translate(-50%, -50%) !important;
+          top: 50% !important;
         }
       `}</style>
 
