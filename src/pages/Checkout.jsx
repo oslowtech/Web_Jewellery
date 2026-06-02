@@ -44,9 +44,11 @@ const Checkout = () => {
       const unitPrice = item.discountPrice ?? item.discount_price ?? item.price;
       return sum + unitPrice * item.quantity;
     }, 0);
-    const shipping = pincode ? calculateShipping(pincode, subtotal) : 0;
+    
+    const activePincode = checkoutState.shippingAddress?.postal_code || pincode;
+    const shipping = activePincode ? calculateShipping(activePincode, subtotal) : 0;
     checkoutActions.setShippingCharge(shipping ?? 0);
-  }, [cart, pincode, checkoutActions]);
+  }, [cart, pincode, checkoutState.shippingAddress, checkoutActions]);
 
   const loadAddresses = async () => {
     try {
@@ -368,13 +370,13 @@ const Checkout = () => {
                   <h2 className="text-xl font-semibold mb-4">Order Summary</h2>
                   <div className="space-y-2 text-sm">
                     <p>
-                      <span className="text-gray-600">Subtotal (Incl. taxes):</span>
+                      <span className="text-gray-600">Base Price (Excl. tax):</span>
                       <span className="float-right font-semibold">
-                        {formatPrice(totals.subtotal)}
+                        {formatPrice(totals.subtotal - totals.taxAmount)}
                       </span>
                     </p>
                     <p>
-                      <span className="text-gray-600">Tax ({Math.round(checkoutState.taxRate * 100)}% Included):</span>
+                      <span className="text-gray-600">Tax ({Math.round(checkoutState.taxRate * 100)}% GST):</span>
                       <span className="float-right font-semibold">
                         {formatPrice(totals.taxAmount)}
                       </span>
@@ -490,11 +492,11 @@ const Checkout = () => {
               <h3 className="text-lg font-semibold mb-4">Order Total</h3>
               <div className="space-y-3 text-sm mb-4">
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Subtotal (Incl. taxes)</span>
-                  <span>{formatPrice(totals.subtotal)}</span>
+                  <span className="text-gray-600">Base Price (Excl. tax)</span>
+                  <span>{formatPrice(totals.subtotal - totals.taxAmount)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Tax (Included)</span>
+                  <span className="text-gray-600">Tax ({Math.round(checkoutState.taxRate * 100)}% GST)</span>
                   <span>{formatPrice(totals.taxAmount)}</span>
                 </div>
                 <div className="flex justify-between">

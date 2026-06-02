@@ -110,11 +110,11 @@ const OrderConfirmation = () => {
             ))}
             <div className="p-4 text-sm space-y-2">
               <div className="flex justify-between text-stone">
-                <span>Subtotal (Incl. taxes)</span>
-                <span>{formatPrice(order.total_amount - order.shipping_charge - (order.gift_wrap_fee || 0) - (order.cod_fee || 0) + order.discount_amount)}</span>
+                <span>Base Price (Excl. tax)</span>
+                <span>{formatPrice(order.total_amount - order.shipping_charge - (order.gift_wrap_fee || 0) - (order.cod_fee || 0) + order.discount_amount - order.tax_amount)}</span>
               </div>
               <div className="flex justify-between text-stone">
-                <span>Tax (Included)</span>
+                <span>Tax (GST)</span>
                 <span>{formatPrice(order.tax_amount)}</span>
               </div>
               {order.shipping_charge > 0 && (
@@ -150,9 +150,11 @@ const OrderConfirmation = () => {
         </div>
 
         <div className="mt-6 flex flex-col gap-3 sm:flex-row print:hidden">
-          <button onClick={() => window.print()} className="inline-flex justify-center rounded-lg bg-onyx px-5 py-3 text-sm font-semibold text-white">
-            Download Invoice
-          </button>
+          {order.payment_status === 'completed' && (
+            <button onClick={() => window.print()} className="inline-flex justify-center rounded-lg bg-onyx px-5 py-3 text-sm font-semibold text-white">
+              Download Invoice
+            </button>
+          )}
           <Link to="/orders" className="inline-flex justify-center rounded-lg bg-onyx px-5 py-3 text-sm font-semibold text-white">
             Track order
           </Link>

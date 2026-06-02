@@ -629,12 +629,12 @@ const AdminOrders = () => {
               {/* Order Summary */}
               <div className="bg-gray-50 p-4 rounded-lg space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <span>Subtotal (Incl. taxes):</span>
-                  <span>{formatPrice(Number(selectedOrder.total_amount || 0) - Number(selectedOrder.shipping_charge || 0) - Number(selectedOrder.gift_wrap_fee || 0) - Number(selectedOrder.cod_fee || 0) + Number(selectedOrder.discount_amount || 0))}</span>
+                  <span>Base Price (Excl. tax):</span>
+                  <span>{formatPrice(Number(selectedOrder.total_amount || 0) - Number(selectedOrder.shipping_charge || 0) - Number(selectedOrder.gift_wrap_fee || 0) - Number(selectedOrder.cod_fee || 0) + Number(selectedOrder.discount_amount || 0) - Number(selectedOrder.tax_amount || 0))}</span>
                 </div>
                 {selectedOrder.tax_amount > 0 && (
                   <div className="flex justify-between">
-                    <span>Tax (Included):</span>
+                    <span>Tax (GST):</span>
                     <span>{formatPrice(Number(selectedOrder.tax_amount || 0))}</span>
                   </div>
                 )}
