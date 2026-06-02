@@ -51,6 +51,7 @@ export const CartProvider = ({ children }) => {
   const [state, dispatch] = useReducer(cartReducer, { items: [], pincode: "" });
   const [user, setUser] = useState(null);
   const [initialized, setInitialized] = useState(false);
+  const [dbLoaded, setDbLoaded] = useState(false);
 
   // Listen to auth state changes
   useEffect(() => {
@@ -64,6 +65,7 @@ export const CartProvider = ({ children }) => {
       setUser(session?.user || null);
       if (event === "SIGNED_OUT") {
         dispatch({ type: "CLEAR" });
+        setDbLoaded(false);
       }
     });
 
@@ -90,7 +92,12 @@ export const CartProvider = ({ children }) => {
 
   // Load and merge cart from DB when user logs in
   useEffect(() => {
-    if (!initialized || !user || !isSupabaseConfigured || !supabase) return;
+    if (!initialized || !isSupabaseConfigured || !supabase) return;
+
+    if (!user) {
+      setDbLoaded(false);
+      return;
+    }
 
     const loadDbCart = async () => {
       try {
@@ -102,6 +109,7 @@ export const CartProvider = ({ children }) => {
 
         if (error && error.code !== "PGRST116") {
           console.error("Error fetching cart from DB:", error);
+          setDbLoaded(true);
           return;
         }
 
@@ -124,6 +132,8 @@ export const CartProvider = ({ children }) => {
         }
       } catch (err) {
         console.error("Unexpected error loading DB cart:", err);
+      } finally {
+        setDbLoaded(true);
       }
     };
 
@@ -139,7 +149,7 @@ export const CartProvider = ({ children }) => {
     writeStorage(PINCODE_KEY, state.pincode, localStorage);
 
     // Sync to DB if logged in
-    if (user && isSupabaseConfigured && supabase) {
+    if (user && isSupabaseConfigured && supabase && dbLoaded) {
       supabase
         .from("user_carts")
         .upsert({
@@ -151,7 +161,7 @@ export const CartProvider = ({ children }) => {
           if (error) console.error("Error syncing cart to DB:", error);
         });
     }
-  }, [state, initialized, user]);
+  }, [state, initialized, user, dbLoaded]);
 
   const total = useMemo(
     () =>
