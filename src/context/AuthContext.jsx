@@ -30,47 +30,31 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     let mounted = true;
 
-    const initializeAuth = async () => {
-      if (!isSupabaseConfigured || !supabase) {
-        if (mounted) {
-          setLoading(false);
-        }
-        return;
-      }
-
-      try {
-        const response = await getSession();
-        if (!mounted) return;
-
-        // Handle both Supabase v2 { data: { session } } format and direct session format
-        const currentSession = response?.data?.session || response?.session || (response?.access_token ? response : null);
-        const currentUser = currentSession?.user || response?.data?.user || null;
-
-        setSession(currentSession);
-        setUser(currentUser);
-        setProfile(currentUser ? await getProfile(currentUser) : null);
-      } catch (authError) {
-        if (mounted) {
-          setError(authError.message || "Unable to load account state.");
-        }
-      } finally {
-        if (mounted) {
-          setLoading(false);
-        }
-      }
-    };
-
-    initializeAuth();
-
     if (!supabase) {
+      setLoading(false);
       return () => {
         mounted = false;
       };
     }
 
+    // 1. Manually fetch session first to ensure we securely get it on load
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (!mounted) return;
+      const currentUser = session?.user || null;
+      setSession(session);
+      setUser(currentUser);
+      if (currentUser) {
+        try {
+          setProfile(await getProfile(currentUser));
+        } catch (e) {
+          setProfile(null);
+        }
+      }
+      setLoading(false);
+    });
+
     const { data } = supabase.auth.onAuthStateChange(async (event, nextSession) => {
       if (!mounted) return;
-      if (event === 'INITIAL_SESSION') return;
 
       setSession(nextSession || null);
       const nextUser = nextSession?.user || null;
@@ -86,6 +70,8 @@ export const AuthProvider = ({ children }) => {
       } else {
         setProfile(null);
       }
+
+      setLoading(false);
     });
 
     return () => {
