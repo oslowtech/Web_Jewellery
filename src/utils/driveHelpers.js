@@ -18,10 +18,20 @@ export function extractDriveDirectLink(url) {
     const match = url.match(/id=([a-zA-Z0-9_-]+)/);
     if (match) fileId = match[1];
   }
+  // Extract ID from previously saved 'thumbnail' links
+  else if (url.includes("drive.google.com/thumbnail") && url.includes("id=")) {
+    const match = url.match(/id=([a-zA-Z0-9_-]+)/);
+    if (match) fileId = match[1];
+  }
+  // Extract ID from already converted 'lh3' links
+  else if (url.includes("lh3.googleusercontent.com/d/")) {
+    const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+    if (match) fileId = match[1];
+  }
   
   if (fileId) {
-    // Use the thumbnail endpoint to bypass Google Drive's embedding restrictions (sz=w1000 means up to 1000px width)
-    return `https://drive.google.com/thumbnail?id=${fileId}&sz=w1000`;
+    // Use Google's internal CDN endpoint which currently bypasses the 2024 CORS/hotlinking restrictions
+    return `https://lh3.googleusercontent.com/d/${fileId}=w1000`;
   }
 
   return url;
