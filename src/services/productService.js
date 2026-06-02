@@ -1,10 +1,14 @@
 import productsData from "../data/products.json";
 import { buildProductImages } from "../utils/productImages.js";
 import { isSupabaseConfigured, supabase } from "../lib/supabase.js";
+import { extractDriveDirectLink } from "../utils/driveHelpers.js";
 
 const normalizeProduct = (product) => {
   const imageFiles = product.imageFiles || product.image_files || [];
-  const imageUrls = product.imageUrls || product.image_urls || [];
+  const rawImageUrls = product.imageUrls || product.image_urls || [];
+  
+  // Automatically convert any Google Drive links into direct viewable images
+  const imageUrls = Array.isArray(rawImageUrls) ? rawImageUrls.map(extractDriveDirectLink) : [];
 
   return {
     ...product,
@@ -86,7 +90,9 @@ export const saveProduct = async (product) => {
     best_seller: product.bestSeller,
     tags: product.tags,
     image_files: product.imageFiles,
-    image_urls: product.imageUrls,
+    image_urls: Array.isArray(product.imageUrls) 
+      ? product.imageUrls.map(extractDriveDirectLink) 
+      : [],
     updated_at: new Date().toISOString(),
   };
 
@@ -113,4 +119,3 @@ export const deleteProduct = async (productId) => {
     throw error;
   }
 };
-
