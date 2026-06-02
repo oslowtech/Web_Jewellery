@@ -22,18 +22,26 @@ const Profile = () => {
     description: "Account profile and cloud login details.",
   });
 
-  if (!loading && !configured) {
+  if (loading) {
+    return (
+      <div className="mx-auto max-w-3xl px-4 py-10 text-center text-stone">
+        Loading profile...
+      </div>
+    );
+  }
+
+  if (!configured) {
     return (
       <div className="mx-auto max-w-3xl space-y-6 px-4 py-10">
         <h1 className="font-display text-2xl">Profile</h1>
-        <div className="rounded-3xl border border-white/70 bg-white/80 p-6 shadow-soft text-sm text-stone">
+        <div className="rounded-3xl border border-amber-200 bg-amber-50 p-6 shadow-soft text-sm text-amber-800">
           Supabase is not configured yet. Add your cloud project variables to enable login and signup.
         </div>
       </div>
     );
   }
 
-  if (!loading && !user) {
+  if (!user) {
     return <Navigate to="/login" replace />;
   }
 

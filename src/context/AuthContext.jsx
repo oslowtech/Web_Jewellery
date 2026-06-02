@@ -39,11 +39,14 @@ export const AuthProvider = ({ children }) => {
       }
 
       try {
-        const currentSession = await getSession();
+        const response = await getSession();
         if (!mounted) return;
 
-        const currentUser = currentSession?.user || null;
-        setSession(currentSession || null);
+        // Handle both Supabase v2 { data: { session } } format and direct session format
+        const currentSession = response?.data?.session || response?.session || (response?.access_token ? response : null);
+        const currentUser = currentSession?.user || response?.data?.user || null;
+
+        setSession(currentSession);
         setUser(currentUser);
         setProfile(currentUser ? await getProfile(currentUser) : null);
       } catch (authError) {
@@ -65,8 +68,9 @@ export const AuthProvider = ({ children }) => {
       };
     }
 
-    const { data } = supabase.auth.onAuthStateChange(async (_, nextSession) => {
+    const { data } = supabase.auth.onAuthStateChange(async (event, nextSession) => {
       if (!mounted) return;
+      if (event === 'INITIAL_SESSION') return;
 
       setSession(nextSession || null);
       const nextUser = nextSession?.user || null;
@@ -82,13 +86,11 @@ export const AuthProvider = ({ children }) => {
       } else {
         setProfile(null);
       }
-
-      setLoading(false);
     });
 
     return () => {
       mounted = false;
-      data.subscription.unsubscribe();
+      data?.subscription?.unsubscribe();
     };
   }, []);
 

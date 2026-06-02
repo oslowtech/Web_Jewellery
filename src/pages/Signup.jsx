@@ -18,7 +18,11 @@ const Signup = () => {
     description: "Create a customer account with Supabase.",
   });
 
-  if (!loading && user) {
+  if (loading) {
+    return <div className="py-10 text-center text-stone">Loading...</div>;
+  }
+
+  if (user) {
     return <Navigate to="/profile" replace />;
   }
 
