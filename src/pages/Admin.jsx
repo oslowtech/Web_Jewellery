@@ -18,9 +18,13 @@ const createEmptyForm = () => ({
   gender: "women",
   description: "",
   material: "Alloy",
-  imageUrls: "",
+  imageUrl1: "",
+  imageUrl2: "",
+  imageUrl3: "",
+  imageUrl4: "",
   imageFiles: "",
   tags: "",
+  stockQuantity: 0,
   stock: true,
   featured: false,
   isNew: false,
@@ -135,10 +139,12 @@ const Admin = () => {
         gender: form.gender,
         description: (form.description || "").trim(),
         material: (form.material || "").trim(),
-        imageUrls: (form.imageUrls || "")
-          .split(",")
-          .map((item) => item.trim())
-          .filter(Boolean),
+        imageUrls: [
+          form.imageUrl1,
+          form.imageUrl2,
+          form.imageUrl3,
+          form.imageUrl4,
+        ].map((item) => (item || "").trim()).filter(Boolean),
         imageFiles: (form.imageFiles || "")
           .split(",")
           .map((item) => item.trim())
@@ -147,6 +153,7 @@ const Admin = () => {
           .split(",")
           .map((item) => item.trim())
           .filter(Boolean),
+        stockQuantity: Number(form.stockQuantity) || 0,
         stock: Boolean(form.stock),
         featured: Boolean(form.featured),
         isNew: Boolean(form.isNew),
@@ -260,6 +267,10 @@ const Admin = () => {
               <span>Material</span>
               <input name="material" value={form.material} onChange={handleChange} className="w-full rounded-xl border border-white/70 bg-white px-3 py-2" />
             </label>
+            <label className="space-y-1 text-sm">
+              <span>Stock Quantity</span>
+              <input name="stockQuantity" type="number" min="0" value={form.stockQuantity} onChange={handleChange} required className="w-full rounded-xl border border-white/70 bg-white px-3 py-2" />
+            </label>
           </div>
 
           <label className="space-y-1 text-sm">
@@ -267,16 +278,23 @@ const Admin = () => {
             <textarea name="description" value={form.description} onChange={handleChange} rows="4" className="w-full rounded-2xl border border-white/70 bg-white px-3 py-2" />
           </label>
 
+          <div className="space-y-1 text-sm">
+            <span className="block font-medium">Product Images (Google Drive Links)</span>
+            <div className="grid gap-2 md:grid-cols-2">
+              <input name="imageUrl1" value={form.imageUrl1} onChange={handleChange} className="w-full rounded-xl border border-white/70 bg-white px-3 py-2" placeholder="Image Link 1 (Primary)" />
+              <input name="imageUrl2" value={form.imageUrl2} onChange={handleChange} className="w-full rounded-xl border border-white/70 bg-white px-3 py-2" placeholder="Image Link 2" />
+              <input name="imageUrl3" value={form.imageUrl3} onChange={handleChange} className="w-full rounded-xl border border-white/70 bg-white px-3 py-2" placeholder="Image Link 3" />
+              <input name="imageUrl4" value={form.imageUrl4} onChange={handleChange} className="w-full rounded-xl border border-white/70 bg-white px-3 py-2" placeholder="Image Link 4" />
+            </div>
+            <p className="text-xs text-stone mt-1">Links will be automatically converted to direct images.</p>
+          </div>
+
           <div className="grid gap-4 md:grid-cols-2">
-            <label className="space-y-1 text-sm">
-              <span>Image URLs</span>
-              <input name="imageUrls" value={form.imageUrls} onChange={handleChange} className="w-full rounded-xl border border-white/70 bg-white px-3 py-2" placeholder="https://... , https://..." />
-            </label>
             <label className="space-y-1 text-sm">
               <span>Image files</span>
               <input name="imageFiles" value={form.imageFiles} onChange={handleChange} className="w-full rounded-xl border border-white/70 bg-white px-3 py-2" placeholder="item1.jpg, item2.jpg" />
             </label>
-            <label className="space-y-1 text-sm md:col-span-2">
+            <label className="space-y-1 text-sm">
               <span>Tags</span>
               <input name="tags" value={form.tags} onChange={handleChange} className="w-full rounded-xl border border-white/70 bg-white px-3 py-2" placeholder="bridal, premium, gift" />
             </label>
