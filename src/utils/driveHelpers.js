@@ -28,6 +28,11 @@ export function extractDriveDirectLink(url) {
     const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
     if (match) fileId = match[1];
   }
+  // Extract ID from drive.usercontent.google.com links
+  else if (url.includes("drive.usercontent.google.com") && url.includes("id=")) {
+    const match = url.match(/id=([a-zA-Z0-9_-]+)/);
+    if (match) fileId = match[1];
+  }
   
   if (fileId) {
     // Use Google's internal CDN endpoint which currently bypasses the 2024 CORS/hotlinking restrictions
