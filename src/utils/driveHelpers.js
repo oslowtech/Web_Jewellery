@@ -35,8 +35,10 @@ export function extractDriveDirectLink(url) {
   }
   
   if (fileId) {
-    // Use Google's internal CDN endpoint which currently bypasses the 2024 CORS/hotlinking restrictions
-    return `https://lh3.googleusercontent.com/d/${fileId}=w1000`;
+    // Google actively blocks direct embedding on websites using strict CORS rules.
+    // WORKAROUND: Route the request through a free image caching proxy (wsrv.nl)
+    const driveUrl = encodeURIComponent(`https://drive.google.com/uc?id=${fileId}`);
+    return `https://wsrv.nl/?url=${driveUrl}`;
   }
 
   return url;
