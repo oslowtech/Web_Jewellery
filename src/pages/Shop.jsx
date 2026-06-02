@@ -86,28 +86,27 @@ const Shop = () => {
     <div className="mx-auto max-w-6xl space-y-6 px-4 py-8">
       {/* Injected CSS to fix the price slider thumb alignment */}
       <style>{`
-        /* 1. For native HTML5 input[type="range"] elements */
-        input[type="range"]::-webkit-slider-thumb {
+        /* 1. Fix overlapping dual sliders so BOTH thumbs can be dragged */
+        input[type="range"] {
+          pointer-events: none; /* Let clicks pass through the track */
           -webkit-appearance: none;
           appearance: none;
-          /* Pulls the thumb up to perfectly center it on the track */
-          margin-top: -6px !important; 
-        }
-        input[type="range"]::-webkit-slider-runnable-track {
-          height: 4px;
-        }
-        
-        /* Fix for native stacked dual-inputs (if you used absolute positioning) */
-        input[type="range"].absolute {
-          top: 50%;
-          transform: translateY(-50%);
+          background: transparent;
+          margin: 0;
         }
 
-        /* 2. For custom div-based dual-thumb sliders (if you used a library) */
-        .slider-thumb, .thumb, [role="slider"], .rc-slider-handle {
-          /* Centers the marker perfectly on both X and Y axis */
-          transform: translate(-50%, -50%) !important;
-          top: 50% !important;
+        input[type="range"]::-webkit-slider-thumb {
+          pointer-events: auto; /* Re-enable clicks ONLY on the thumbs */
+          -webkit-appearance: none;
+          appearance: none;
+          /* Pull the thumb slightly up to perfectly center it on your track line */
+          /* If it is STILL slightly below the line, change this to -4px or -6px */
+          transform: translateY(-2px); 
+        }
+        
+        input[type="range"]::-moz-range-thumb {
+          pointer-events: auto;
+          transform: translateY(-2px);
         }
       `}</style>
 
