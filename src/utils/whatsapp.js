@@ -13,7 +13,7 @@ export const handleWhatsAppInquiry = (product, notify, pincode = "") => {
   if (!product) return;
 
   const price = product.discountPrice || product.price;
-  let message = `Hello, I want to inquire about this jewellery item.\n\nProduct ID: ${product.id}\nProduct Name: ${product.name}\nPrice: ₹${price}`;
+  let message = `Hello Nagneshwari Jewels, I want to inquire about this jewellery item.\n\nProduct ID: ${product.id}\nProduct Name: ${product.name}\nPrice: ₹${price}`;
 
   if (pincode) {
     const shipping = calculateShipping(pincode, price);
@@ -52,7 +52,7 @@ export const handleWhatsAppInquiry = (product, notify, pincode = "") => {
 export const handleWhatsAppCartInquiry = (cart, total, pincode, notify) => {
   if (!cart?.length) return;
 
-  let message = "Hello, I would like to place an order for the following items:\n\n";
+  let message = "Hello Nagneshwari Jewels, I would like to place an order for the following items:\n\n";
 
   cart.forEach((item, index) => {
     const price = item.discountPrice || item.price;
@@ -89,4 +89,3 @@ export const handleWhatsAppCartInquiry = (cart, total, pincode, notify) => {
   window.open(url, "_blank", "noopener,noreferrer");
   notify?.("Order details sent to WhatsApp!");
 };
-

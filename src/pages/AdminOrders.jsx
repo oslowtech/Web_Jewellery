@@ -453,6 +453,12 @@ const AdminOrders = () => {
 
             {/* Content */}
             <div className="p-6 space-y-6">
+              {/* Invoice Print Header */}
+              <div className="hidden print:block text-center mb-6 pb-6 border-b border-gray-200">
+                <h1 className="text-3xl font-display font-bold text-onyx">Nagneshwari Jewels</h1>
+                <p className="text-sm text-gray-500">Premium Artificial Jewellery</p>
+              </div>
+
               {/* Order Status */}
               <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
                 <div className="flex items-center justify-between mb-3">

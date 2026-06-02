@@ -46,6 +46,12 @@ const OrderConfirmation = () => {
   return (
     <div className="mx-auto max-w-4xl px-4 py-10">
       <div className="rounded-lg border border-white/70 bg-white p-6 shadow-soft">
+        {/* Printable Invoice Header */}
+        <div className="hidden print:block text-center mb-8 pb-6 border-b border-gray-200">
+          <h1 className="text-4xl font-display font-bold text-onyx">Nagneshwari Jewels</h1>
+          <p className="text-sm text-stone mt-1">Premium Artificial Jewellery</p>
+        </div>
+
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <div className="flex items-center gap-3 text-green-700">

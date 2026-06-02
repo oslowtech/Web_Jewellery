@@ -43,7 +43,7 @@ const testProduct = {
   discountPrice: 999
 };
 
-const message = `Hello, I want to inquire about this jewellery item.\n\nProduct ID: ${testProduct.id}\nProduct Name: ${testProduct.name}\nPrice: ₹${testProduct.discountPrice}\nShipping (Pincode: 110001): ₹${calculateShipping("110001", testProduct.discountPrice)}\nTotal: ₹${testProduct.discountPrice + calculateShipping("110001", testProduct.discountPrice)}`;
+const message = `Hello Nagneshwari Jewels, I want to inquire about this jewellery item.\n\nProduct ID: ${testProduct.id}\nProduct Name: ${testProduct.name}\nPrice: ₹${testProduct.discountPrice}\nShipping (Pincode: 110001): ₹${calculateShipping("110001", testProduct.discountPrice)}\nTotal: ₹${testProduct.discountPrice + calculateShipping("110001", testProduct.discountPrice)}`;
 
 console.log("Message:", message);
 console.log("\nEncoded URL:", `https://wa.me/917307058932?text=${encodeURIComponent(message)}`);
