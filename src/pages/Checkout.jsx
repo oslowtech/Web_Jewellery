@@ -13,7 +13,7 @@ import { formatPrice } from '../utils/format.js';
 
 const Checkout = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { cart, pincode, clearCart } = useCart();
   const { state: checkoutState, actions: checkoutActions, totals, isCheckoutReady } = useCheckout();
   const { actions: orderActions } = useOrder();
@@ -26,13 +26,14 @@ const Checkout = () => {
   const [paymentMethod, setPaymentMethod] = useState(PAYMENT_METHODS.PREPAID);
 
   useEffect(() => {
+    if (authLoading) return;
     if (!user) {
       navigate('/login');
       return;
     }
 
     loadAddresses();
-  }, [user, navigate]);
+  }, [user, authLoading, navigate]);
 
   useEffect(() => {
     checkoutActions.setCartItems(cart || []);
@@ -130,7 +131,7 @@ const Checkout = () => {
     }
   };
 
-  if (!user) {
+  if (authLoading || !user) {
     return null;
   }
 

@@ -13,7 +13,7 @@ import AddressForm from '../components/common/AddressForm.jsx';
 
 const AddressManager = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { addToast } = useToast();
 
   const [addresses, setAddresses] = useState([]);
@@ -23,12 +23,13 @@ const AddressManager = () => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    if (authLoading) return;
     if (!user) {
       navigate('/login');
       return;
     }
     loadAddresses();
-  }, [user, navigate]);
+  }, [user, authLoading, navigate]);
 
   const loadAddresses = async () => {
     try {

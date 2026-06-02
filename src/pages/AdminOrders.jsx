@@ -49,7 +49,7 @@ const formatStatus = (status = '') => status.replace(/_/g, ' ');
 
 const AdminOrders = () => {
   const navigate = useNavigate();
-  const { isAdmin, user } = useAuth();
+  const { isAdmin, user, loading: authLoading } = useAuth();
   const { addToast } = useToast();
 
   // State
@@ -75,12 +75,13 @@ const AdminOrders = () => {
 
   // Load orders on mount
   useEffect(() => {
+    if (authLoading) return;
     if (!isAdmin) {
       navigate('/');
       return;
     }
     loadOrders();
-  }, [isAdmin, navigate]);
+  }, [isAdmin, authLoading, navigate]);
 
   // Apply filters whenever filter state changes
   useEffect(() => {

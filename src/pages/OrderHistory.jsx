@@ -17,7 +17,7 @@ const ORDER_STATUS_COLORS = {
 
 const OrderHistory = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { state: orderState, actions: orderActions, helpers } = useOrder();
   const { addToast } = useToast();
 
@@ -25,13 +25,14 @@ const OrderHistory = () => {
   const [filteredOrders, setFilteredOrders] = useState([]);
 
   useEffect(() => {
+    if (authLoading) return;
     if (!user) {
       navigate('/login');
       return;
     }
 
     orderActions.loadOrders();
-  }, [user, navigate, orderActions]);
+  }, [user, authLoading, navigate, orderActions]);
 
   useEffect(() => {
     let filtered = orderState.orders;
