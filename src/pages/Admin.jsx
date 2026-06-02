@@ -35,7 +35,7 @@ const buildProductId = (name) => {
     .toUpperCase()
     .replace(/[^A-Z0-9]+/g, "")
     .slice(0, 6);
-  const suffix = Date.now().toString().slice(-4);
+  const suffix = Math.floor(10000 + Math.random() * 90000);
   return `${base || "JW"}${suffix}`;
 };
 
@@ -134,15 +134,15 @@ const Admin = () => {
       gender: form.gender,
       description: form.description.trim(),
       material: form.material.trim(),
-      imageUrls: form.imageUrls
+      imageUrls: (form.imageUrls || "")
         .split(",")
         .map((item) => item.trim())
         .filter(Boolean),
-      imageFiles: form.imageFiles
+      imageFiles: (form.imageFiles || "")
         .split(",")
         .map((item) => item.trim())
         .filter(Boolean),
-      tags: form.tags
+      tags: (form.tags || "")
         .split(",")
         .map((item) => item.trim())
         .filter(Boolean),
