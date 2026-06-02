@@ -39,21 +39,34 @@ export const AuthProvider = ({ children }) => {
 
     // 1. Manually fetch session first to ensure we securely get it on load
     supabase.auth.getSession().then(async ({ data: { session } }) => {
+    // Fetch initial session and profile safely outside of auth listeners
+    supabase.auth.getSession().then(async ({ data: { session }, error }) => {
       if (!mounted) return;
       const currentUser = session?.user || null;
+      if (error) console.error("Session error:", error);
+
       setSession(session);
       setUser(currentUser);
       if (currentUser) {
+      setUser(session?.user || null);
+
+      if (session?.user) {
         try {
           setProfile(await getProfile(currentUser));
         } catch (e) {
           setProfile(null);
+          setProfile(await getProfile(session.user));
+        } catch (err) {
+          console.error("Profile fetch error:", err);
         }
       }
+
       setLoading(false);
     });
 
     const { data } = supabase.auth.onAuthStateChange(async (event, nextSession) => {
+    // Synchronous listener for auth changes (prevents deadlocks!)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, nextSession) => {
       if (!mounted) return;
       // Ignore INITIAL_SESSION to prevent prematurely dropping the loading state
       if (event === "INITIAL_SESSION") return;
@@ -72,13 +85,40 @@ export const AuthProvider = ({ children }) => {
       } else {
         setProfile(null);
       }
+      setSession(nextSession);
+      setUser(nextSession?.user || null);
     });
 
     return () => {
       mounted = false;
       data?.subscription?.unsubscribe();
+      subscription?.unsubscribe();
     };
   }, []);
+
+  // Handle subsequent profile updates when user changes (e.g. login/logout)
+  useEffect(() => {
+    let mounted = true;
+    
+    // Skip if initial load is still running
+    if (loading) return;
+
+    if (!user) {
+      setProfile(null);
+      return;
+    }
+
+    getProfile(user)
+      .then((data) => {
+        if (mounted) setProfile(data);
+      })
+      .catch((err) => {
+        console.error("Profile update error:", err);
+        if (mounted) setProfile(null);
+      });
+
+    return () => { mounted = false; };
+  }, [user?.id, loading]);
 
   const value = useMemo(
     () => ({
