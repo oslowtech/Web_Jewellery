@@ -18,7 +18,7 @@ const Profile = () => {
   }, [profile, user]);
 
   usePageMeta({
-    title: "Profile | Elan Jewellery",
+    title: "Profile | Nagneshwari Jewels",
     description: "Account profile and cloud login details.",
   });
 

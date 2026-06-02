@@ -42,7 +42,7 @@ const buildProductId = (name) => {
 const Admin = () => {
   const { profile, user, configured, loading: authLoading } = useAuth();
   usePageMeta({
-    title: "Admin Portal | Elan Jewellery",
+    title: "Admin Portal | Nagneshwari Jewels",
     description: "Manage products from the Supabase admin portal.",
   });
 

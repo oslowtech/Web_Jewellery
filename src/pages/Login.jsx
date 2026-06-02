@@ -14,7 +14,7 @@ const Login = () => {
   const [submitting, setSubmitting] = useState(false);
 
   usePageMeta({
-    title: "Login | Elan Jewellery",
+    title: "Login | Nagneshwari Jewels",
     description: "Login with your Supabase account.",
   });
 

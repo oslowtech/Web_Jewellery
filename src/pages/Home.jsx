@@ -11,7 +11,7 @@ import { buildProductSlug } from "../utils/slug.js";
 
 const Home = () => {
   usePageMeta({
-    title: "Elan Jewellery | Premium Artificial Jewellery",
+    title: "Nagneshwari Jewels | Premium Artificial Jewellery",
     description:
       "Discover premium artificial jewellery with elegant, mobile-first shopping.",
   });

@@ -13,7 +13,7 @@ import EmptyState from "../components/common/EmptyState.jsx";
 
 const Shop = () => {
   usePageMeta({
-    title: "Shop Artificial Jewellery | Elan Jewellery",
+    title: "Shop Artificial Jewellery | Nagneshwari Jewels",
     description: "Browse premium artificial jewellery with refined filters and search.",
   });
 

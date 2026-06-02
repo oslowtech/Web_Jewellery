@@ -38,7 +38,7 @@ export function generateWhatsAppOrderLink(order, paymentMethod) {
   const isCod = paymentMethod === PAYMENT_METHODS.COD;
   const methodText = isCod ? 'Cash on Delivery (COD)' : 'Prepaid (Manual)';
   
-  const message = `Hello Elan Jewellery, I have placed a new order!\n\n*Order ID:* ${order.order_number || order.id}\n*Payment Method:* ${methodText}\n*Total Amount:* ₹${order.total_amount}\n\nPlease confirm my order details and provide the payment link.`;
+  const message = `Hello Nagneshwari Jewels, I have placed a new order!\n\n*Order ID:* ${order.order_number || order.id}\n*Payment Method:* ${methodText}\n*Total Amount:* ₹${order.total_amount}\n\nPlease confirm my order details and provide the payment link.`;
   
   return `https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent(message)}`;
 }

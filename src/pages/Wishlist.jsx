@@ -6,7 +6,7 @@ import usePageMeta from "../hooks/usePageMeta.js";
 
 const Wishlist = () => {
   usePageMeta({
-    title: "Wishlist | Elan Jewellery",
+    title: "Wishlist | Nagneshwari Jewels",
     description: "Save your favorite jewellery pieces for later.",
   });
 

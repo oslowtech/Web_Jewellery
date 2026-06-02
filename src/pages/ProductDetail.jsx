@@ -28,12 +28,12 @@ const ProductDetail = () => {
   usePageMeta(
     product
       ? {
-          title: `${product.name} | Elan Jewellery`,
+          title: `${product.name} | Nagneshwari Jewels`,
           description: product.description,
           image: product.images[0],
         }
       : {
-          title: "Product | Elan Jewellery",
+          title: "Product | Nagneshwari Jewels",
           description: "Discover premium artificial jewellery with elegant details.",
         }
   );

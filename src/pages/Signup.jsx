@@ -14,7 +14,7 @@ const Signup = () => {
   const [submitting, setSubmitting] = useState(false);
 
   usePageMeta({
-    title: "Sign Up | Elan Jewellery",
+    title: "Sign Up | Nagneshwari Jewels",
     description: "Create a customer account with Supabase.",
   });
 

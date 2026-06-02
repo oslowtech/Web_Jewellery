@@ -9,7 +9,7 @@ import usePageMeta from "../hooks/usePageMeta.js";
 
 const Cart = () => {
   usePageMeta({
-    title: "Your Cart | Elan Jewellery",
+    title: "Your Cart | Nagneshwari Jewels",
     description: "Review your selected jewellery pieces and totals.",
   });
 
