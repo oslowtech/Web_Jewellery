@@ -84,6 +84,26 @@ const Shop = () => {
 
   return (
     <div className="mx-auto max-w-6xl space-y-6 px-4 py-8">
+      {/* Injected CSS to fix the price slider thumb alignment */}
+      <style>{`
+        /* 1. For native HTML5 input[type="range"] elements */
+        input[type="range"]::-webkit-slider-thumb {
+          -webkit-appearance: none;
+          appearance: none;
+          /* Pulls the thumb up to perfectly center it on the track */
+          margin-top: -6px !important; 
+        }
+        input[type="range"]::-webkit-slider-runnable-track {
+          height: 4px;
+        }
+        
+        /* 2. For custom div-based dual-thumb sliders (if you used a library) */
+        .slider-thumb, .thumb, [role="slider"], .rc-slider-handle {
+          /* Centers the marker exactly on its calculated value percentage */
+          transform: translateX(-50%) !important; 
+        }
+      `}</style>
+
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <SearchBar
           query={filters.query}
