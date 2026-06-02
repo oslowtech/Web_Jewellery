@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react';
+﻿﻿import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronDown, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
@@ -62,6 +62,8 @@ const AdminOrders = () => {
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [newStatus, setNewStatus] = useState(null);
   const [statusNotes, setStatusNotes] = useState('');
+  const [trackingId, setTrackingId] = useState('');
+  const [trackingUrl, setTrackingUrl] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
 
   // Filters
@@ -140,17 +142,19 @@ const AdminOrders = () => {
 
     try {
       setIsUpdating(true);
-      await updateOrderStatusAdmin(selectedOrder.id, newStatus, statusNotes);
+      await updateOrderStatusAdmin(selectedOrder.id, newStatus, trackingId, trackingUrl, statusNotes);
       
       // Update local state
       const updatedOrders = orders.map(o =>
-        o.id === selectedOrder.id ? { ...o, status: newStatus } : o
+        o.id === selectedOrder.id ? { ...o, status: newStatus, tracking_id: trackingId, tracking_url: trackingUrl } : o
       );
       setOrders(updatedOrders);
       
       setShowStatusModal(false);
       setStatusNotes('');
       setNewStatus(null);
+      setTrackingId('');
+      setTrackingUrl('');
       addToast(`Order status updated to ${newStatus}`);
       
       // Reload detail
@@ -455,6 +459,8 @@ const AdminOrders = () => {
                   <button
                     onClick={() => {
                       setNewStatus(selectedOrder.status);
+                      setTrackingId(selectedOrder.tracking_id || '');
+                      setTrackingUrl(selectedOrder.tracking_url || '');
                       setShowStatusModal(true);
                     }}
                     className="text-rose hover:underline text-sm font-medium"
@@ -484,6 +490,23 @@ const AdminOrders = () => {
                   >
                     {selectedOrder.payment_status}
                   </span>
+                </div>
+              )}
+
+              {/* Shipping Details / Tracking */}
+              {(selectedOrder.tracking_id || selectedOrder.tracking_url) && (
+                <div className="bg-indigo-50 p-4 rounded-lg border border-indigo-200">
+                  <h3 className="font-semibold text-onyx mb-2">Tracking Information</h3>
+                  {selectedOrder.tracking_id && (
+                    <p className="text-sm text-indigo-900 mb-1">
+                      <span className="font-medium">Tracking ID:</span> {selectedOrder.tracking_id}
+                    </p>
+                  )}
+                  {selectedOrder.tracking_url && (
+                    <a href={selectedOrder.tracking_url} target="_blank" rel="noreferrer" className="text-sm text-rose hover:underline font-medium">
+                      Track Shipment &rarr;
+                    </a>
+                  )}
                 </div>
               )}
 
@@ -563,6 +586,7 @@ const AdminOrders = () => {
                     >
                       <div>
                         <p className="font-medium text-onyx">{item.product_name}</p>
+                        <p className="text-xs text-gray-500 mb-1">Product ID: {item.product_id}</p>
                         <p className="text-gray-600">
                           Qty: {item.quantity} x {formatPrice(Number(item.price_per_unit || 0))}
                         </p>
@@ -651,6 +675,8 @@ const AdminOrders = () => {
                   setShowStatusModal(false);
                   setStatusNotes('');
                   setNewStatus(null);
+                  setTrackingId('');
+                  setTrackingUrl('');
                 }}
                 className="text-gray-500 hover:text-gray-700"
               >
@@ -685,6 +711,31 @@ const AdminOrders = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Tracking ID (optional)
+                </label>
+                <input
+                  type="text"
+                  value={trackingId}
+                  onChange={(e) => setTrackingId(e.target.value)}
+                  placeholder="e.g. AWB123456789"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-rose"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Tracking URL (optional)
+                </label>
+                <input
+                  type="url"
+                  value={trackingUrl}
+                  onChange={(e) => setTrackingUrl(e.target.value)}
+                  placeholder="https://..."
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-rose"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Notes (optional)
                 </label>
                 <textarea
@@ -702,6 +753,8 @@ const AdminOrders = () => {
                     setShowStatusModal(false);
                     setStatusNotes('');
                     setNewStatus(null);
+                    setTrackingId('');
+                    setTrackingUrl('');
                   }}
                   className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium"
                 >
@@ -724,5 +777,3 @@ const AdminOrders = () => {
 };
 
 export default AdminOrders;
-
-

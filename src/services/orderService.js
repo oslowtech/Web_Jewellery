@@ -611,7 +611,7 @@ export async function fetchAllOrdersForAdmin(filters = {}) {
 /**
  * Update order status for admin
  */
-export async function updateOrderStatusAdmin(orderId, newStatus, notes = '') {
+export async function updateOrderStatusAdmin(orderId, newStatus, trackingId = null, trackingUrl = null, notes = '') {
   requireSupabase();
   try {
     const { data: { user } } = await supabase.auth.getUser();
@@ -630,6 +630,8 @@ export async function updateOrderStatusAdmin(orderId, newStatus, notes = '') {
       .from('orders')
       .update({
         status: newStatus,
+        tracking_id: trackingId || null,
+        tracking_url: trackingUrl || null,
         updated_at: new Date().toISOString()
       })
       .eq('id', orderId)

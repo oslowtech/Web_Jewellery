@@ -219,6 +219,31 @@ const OrderHistory = () => {
                     </p>
                   </div>
                 )}
+
+                {/* Tracking Info */}
+                {(order.tracking_id || order.tracking_url) && (
+                  <div className="mt-4 pt-4 border-t">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
+                      <div>
+                        <p className="text-xs text-gray-600 mb-1">Tracking Information</p>
+                        {order.tracking_id && (
+                          <p className="text-sm font-semibold text-onyx">ID: {order.tracking_id}</p>
+                        )}
+                      </div>
+                      {order.tracking_url && (
+                        <a 
+                          href={order.tracking_url} 
+                          target="_blank" 
+                          rel="noreferrer"
+                          className="mt-2 sm:mt-0 text-rose hover:underline text-sm font-semibold"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          Track Package &rarr;
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             ))
           )}
