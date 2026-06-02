@@ -163,7 +163,7 @@ const AdminOrders = () => {
       setSelectedOrder(updated);
     } catch (err) {
       console.error('Error updating status:', err);
-      addToast('Failed to update status');
+      addToast(`Update failed: ${err.message || 'Unknown database error'}`);
     } finally {
       setIsUpdating(false);
     }
