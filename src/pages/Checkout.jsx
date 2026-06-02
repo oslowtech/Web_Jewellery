@@ -7,13 +7,13 @@ import { useOrder } from '../context/OrderContext.jsx';
 import { useToast } from '../context/ToastContext.jsx';
 import { fetchAddresses } from '../services/addressService.js';
 import { createOrder, validateOrderData } from '../services/orderService.js';
-import { PAYMENT_METHODS, finalizeManualOrder, generateWhatsAppOrderLink } from '../services/paymentService.js';
+import { PAYMENT_METHODS, finalizeManualOrder } from '../services/paymentService.js';
 import { calculateShipping } from '../utils/shipping.js';
 import { formatPrice } from '../utils/format.js';
 
 const Checkout = () => {
   const navigate = useNavigate();
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, signOut } = useAuth();
   const { cart, pincode, clearCart } = useCart();
   const { state: checkoutState, actions: checkoutActions, totals, isCheckoutReady } = useCheckout();
   const { actions: orderActions } = useOrder();
@@ -120,12 +120,13 @@ const Checkout = () => {
       const order = await createOrder(orderData);
       orderActions.addOrder(order);
 
-      // Finalize manual order and redirect to WhatsApp
+      // Finalize manual order
       const finalizedOrder = await finalizeManualOrder(order.id, paymentMethod);
       clearCart();
       
-      const whatsappUrl = generateWhatsAppOrderLink(finalizedOrder, paymentMethod);
-      window.location.href = whatsappUrl;
+      addToast({ message: 'Order placed successfully! You have been signed out.', type: 'success' });
+      await signOut();
+      navigate('/login');
     } catch (err) {
       const message = err.message || 'Failed to process order';
       setError(message);
