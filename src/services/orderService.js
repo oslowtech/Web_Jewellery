@@ -146,6 +146,15 @@ export async function createOrder(orderData) {
 
     if (itemsError) throw itemsError;
 
+    // Update inventory stock
+    for (const item of sanitizedItems) {
+      const { error: stockError } = await supabase.rpc('decrement_stock', {
+        product_id: item.productId,
+        quantity_to_deduct: item.quantity
+      });
+      if (stockError) console.error(`Failed to deduct stock for product ${item.productId}:`, stockError);
+    }
+
     // Insert gifting metadata if applicable
     if (gifting && (gifting.is_gift || gifting.isGift)) {
       const giftingResult = sanitizeGiftingMetadata({
@@ -331,6 +340,19 @@ export async function updateOrderStatus(orderId, newStatus, notes = '') {
           notes
         }
       ]);
+
+    // Restore inventory if order is cancelled
+    if (newStatus === 'cancelled' && order.status !== 'cancelled') {
+      if (order.order_items && order.order_items.length > 0) {
+        for (const item of order.order_items) {
+          const { error: stockError } = await supabase.rpc('increment_stock', {
+            product_id: item.product_id,
+            quantity_to_add: item.quantity
+          });
+          if (stockError) console.error(`Failed to restore stock for product ${item.product_id}:`, stockError);
+        }
+      }
+    }
 
     return data;
   } catch (err) {
@@ -625,7 +647,7 @@ export async function updateOrderStatusAdmin(orderId, newStatus, trackingId = nu
 
     const { data: existingOrder, error: existingError } = await supabase
       .from('orders')
-      .select('status')
+      .select('status, order_items(product_id, quantity)')
       .eq('id', orderId)
       .single();
 
@@ -658,6 +680,19 @@ export async function updateOrderStatusAdmin(orderId, newStatus, trackingId = nu
           notes
         }
       ]);
+
+    // Restore inventory if order is cancelled by admin
+    if (newStatus === 'cancelled' && existingOrder?.status !== 'cancelled') {
+      if (existingOrder.order_items && existingOrder.order_items.length > 0) {
+        for (const item of existingOrder.order_items) {
+          const { error: stockError } = await supabase.rpc('increment_stock', {
+            product_id: item.product_id,
+            quantity_to_add: item.quantity
+          });
+          if (stockError) console.error(`Failed to restore stock for product ${item.product_id}:`, stockError);
+        }
+      }
+    }
 
     return data;
   } catch (err) {
