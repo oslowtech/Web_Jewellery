@@ -37,7 +37,7 @@ const Navbar = () => {
     <header className="fixed top-0 z-40 w-full border-b border-white/60 bg-cream/95 backdrop-blur">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
         <Link to="/" className="font-display text-xl">
-          Elan Jewellery
+          Nagneshwari Jewels
         </Link>
         <nav className="hidden items-center gap-6 text-sm md:flex">
           {links.map((link) => (
