@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useReducer, useState } from "react";
 import { readStorage, writeStorage } from "../utils/storage.js";
+import { isSupabaseConfigured, supabase } from "../lib/supabase.js";
 
 const CartContext = createContext(null);
 
@@ -48,6 +49,26 @@ const cartReducer = (state, action) => {
 export const CartProvider = ({ children }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [state, dispatch] = useReducer(cartReducer, { items: [], pincode: "" });
+  const [user, setUser] = useState(null);
+  const [initialized, setInitialized] = useState(false);
+
+  // Listen to auth state changes
+  useEffect(() => {
+    if (!isSupabaseConfigured || !supabase) return;
+
+    supabase.auth.getSession().then(({ data }) => {
+      setUser(data?.session?.user || null);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setUser(session?.user || null);
+      if (event === "SIGNED_OUT") {
+        dispatch({ type: "CLEAR" });
+      }
+    });
+
+    return () => subscription?.unsubscribe();
+  }, []);
 
   useEffect(() => {
     const sessionCart = readStorage(SESSION_KEY, null, sessionStorage);
@@ -63,13 +84,74 @@ export const CartProvider = ({ children }) => {
     if (pincode) {
       dispatch({ type: "SET_PINCODE", payload: pincode });
     }
+
+    setInitialized(true);
   }, []);
 
+  // Load and merge cart from DB when user logs in
   useEffect(() => {
+    if (!initialized || !user || !isSupabaseConfigured || !supabase) return;
+
+    const loadDbCart = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("user_carts")
+          .select("cart_items")
+          .eq("user_id", user.id)
+          .single();
+
+        if (error && error.code !== "PGRST116") {
+          console.error("Error fetching cart from DB:", error);
+          return;
+        }
+
+        if (data?.cart_items) {
+          const remoteCart = data.cart_items;
+          const localCart = state.items;
+
+          // Merge DB items with existing local items (if user shopped before logging in)
+          const merged = [...remoteCart];
+          localCart.forEach((localItem) => {
+            const existing = merged.find((r) => r.id === localItem.id);
+            if (existing) {
+              existing.quantity = Math.max(existing.quantity, localItem.quantity);
+            } else {
+              merged.push(localItem);
+            }
+          });
+
+          dispatch({ type: "SET", payload: merged });
+        }
+      } catch (err) {
+        console.error("Unexpected error loading DB cart:", err);
+      }
+    };
+
+    loadDbCart();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, initialized]);
+
+  useEffect(() => {
+    if (!initialized) return;
+
     writeStorage(CART_KEY, state.items, localStorage);
     writeStorage(SESSION_KEY, state.items, sessionStorage);
     writeStorage(PINCODE_KEY, state.pincode, localStorage);
-  }, [state]);
+
+    // Sync to DB if logged in
+    if (user && isSupabaseConfigured && supabase) {
+      supabase
+        .from("user_carts")
+        .upsert({
+          user_id: user.id,
+          cart_items: state.items,
+          updated_at: new Date().toISOString(),
+        })
+        .then(({ error }) => {
+          if (error) console.error("Error syncing cart to DB:", error);
+        });
+    }
+  }, [state, initialized, user]);
 
   const total = useMemo(
     () =>
@@ -105,4 +187,3 @@ export const useCart = () => {
   }
   return context;
 };
-
