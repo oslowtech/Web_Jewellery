@@ -79,6 +79,23 @@ const OrderConfirmation = () => {
           </div>
         </div>
 
+        {/* Tracking Details */}
+        {(order.tracking_id || order.tracking_url) && (
+          <div className="mt-6 rounded-lg bg-indigo-50 border border-indigo-200 p-4">
+            <h3 className="font-semibold text-indigo-900 mb-2">Tracking Information</h3>
+            {order.tracking_id && (
+              <p className="text-sm text-indigo-800 mb-1">
+                <span className="font-medium">Tracking ID:</span> {order.tracking_id}
+              </p>
+            )}
+            {order.tracking_url && (
+              <a href={order.tracking_url} target="_blank" rel="noreferrer" className="text-sm text-rose hover:underline font-semibold">
+                Track your shipment &rarr;
+              </a>
+            )}
+          </div>
+        )}
+
         <div className="mt-6">
           <h2 className="font-semibold">Items</h2>
           <div className="mt-3 divide-y divide-gray-100 rounded-lg border border-gray-200">

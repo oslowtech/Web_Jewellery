@@ -44,7 +44,7 @@ const OrderHistory = () => {
   }, [orderState.orders, selectedStatus]);
 
   const handleViewOrder = (orderId) => {
-    navigate(`/order/${orderId}`);
+    navigate(`/order-confirmation/${orderId}`);
   };
 
   const stats = helpers.getOrderStats();
@@ -102,6 +102,10 @@ const OrderHistory = () => {
           {orderState.loading ? (
             <div className="text-center py-12">
               <p className="text-gray-500">Loading orders...</p>
+            </div>
+          ) : orderState.error ? (
+            <div className="text-center py-12 bg-red-50 rounded-lg border border-red-200">
+              <p className="text-red-700 font-medium">Error loading orders: {orderState.error}</p>
             </div>
           ) : filteredOrders.length === 0 ? (
             <div className="text-center py-12 bg-white rounded-lg border border-gray-200">

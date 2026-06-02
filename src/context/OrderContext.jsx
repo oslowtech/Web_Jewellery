@@ -1,4 +1,4 @@
-import { createContext, useContext, useReducer, useCallback, useEffect } from 'react';
+import { createContext, useContext, useReducer, useCallback, useEffect, useMemo } from 'react';
 import { fetchUserOrders, getOrderById, getOrderStatusHistory } from '../services/orderService.js';
 
 const OrderContext = createContext(null);
@@ -187,25 +187,39 @@ export const OrderProvider = ({ children }) => {
     return state.orders.slice(0, limit);
   }, [state.orders]);
 
-  const value = {
+  const actions = useMemo(() => ({
+    loadOrders,
+    loadOrderById,
+    addOrder,
+    updateOrder,
+    setFilters,
+    clearFilters,
+    filterByStatus,
+    filterByPaymentStatus,
+    reset
+  }), [
+    loadOrders,
+    loadOrderById,
+    addOrder,
+    updateOrder,
+    setFilters,
+    clearFilters,
+    filterByStatus,
+    filterByPaymentStatus,
+    reset
+  ]);
+
+  const helpers = useMemo(() => ({
+    getOrderStats,
+    getTotalOrderValue,
+    getRecentOrders
+  }), [getOrderStats, getTotalOrderValue, getRecentOrders]);
+
+  const value = useMemo(() => ({
     state,
-    actions: {
-      loadOrders,
-      loadOrderById,
-      addOrder,
-      updateOrder,
-      setFilters,
-      clearFilters,
-      filterByStatus,
-      filterByPaymentStatus,
-      reset
-    },
-    helpers: {
-      getOrderStats,
-      getTotalOrderValue,
-      getRecentOrders
-    }
-  };
+    actions,
+    helpers
+  }), [state, actions, helpers]);
 
   return (
     <OrderContext.Provider value={value}>
