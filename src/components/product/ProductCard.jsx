@@ -11,6 +11,7 @@ const ProductCard = ({ product, onQuickView }) => {
   const { toggle, isWished } = useWishlist();
   const wished = isWished(product.id);
   const slug = buildProductSlug(product);
+  const isOutOfStock = product.stock_quantity <= 0;
 
   const handleAdd = () => {
     addItem({
@@ -78,13 +79,23 @@ const ProductCard = ({ product, onQuickView }) => {
         >
           Quick View
         </button>
-        <button
-          type="button"
-          className="flex-1 rounded-full bg-onyx px-3 py-2 text-xs text-white"
-          onClick={handleAdd}
-        >
-          Add to Cart
-        </button>
+        {isOutOfStock ? (
+          <button
+            type="button"
+            disabled
+            className="flex-1 cursor-not-allowed rounded-full bg-stone/20 px-3 py-2 text-xs text-stone"
+          >
+            Out of stock
+          </button>
+        ) : (
+          <button
+            type="button"
+            className="flex-1 rounded-full bg-onyx px-3 py-2 text-xs text-white"
+            onClick={handleAdd}
+          >
+            Add to Cart
+          </button>
+        )}
       </div>
     </motion.div>
   );

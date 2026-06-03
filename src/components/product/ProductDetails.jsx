@@ -29,6 +29,8 @@ const ProductDetails = ({ product }) => {
     navigate("/checkout");
   };
 
+  const isOutOfStock = product.stock_quantity <= 0;
+
   return (
     <div className="space-y-4 rounded-3xl border border-white/70 bg-white/80 p-6 shadow-soft">
       <div>
@@ -48,7 +50,7 @@ const ProductDetails = ({ product }) => {
           </span>
         ) : null}
       </div>
-      <p className="text-sm text-stone">{product.description}</p>
+      <p className="whitespace-pre-wrap text-sm text-stone">{product.description}</p>
       <div className="rounded-2xl bg-champagne/60 p-4 text-sm">
         <p className="font-medium">Material</p>
         <p className="text-stone">{product.material}</p>
@@ -66,14 +68,24 @@ const ProductDetails = ({ product }) => {
         </div>
       ) : null}
       <div className="grid gap-3 sm:grid-cols-2">
-        <button
-          type="button"
-          className="flex items-center justify-center gap-2 rounded-full bg-onyx px-4 py-3 text-sm text-white"
-          onClick={handleAdd}
-        >
-          <ShoppingBag size={16} />
-          Add to cart
-        </button>
+        {isOutOfStock ? (
+          <button
+            type="button"
+            disabled
+            className="flex cursor-not-allowed items-center justify-center gap-2 rounded-full bg-stone/20 px-4 py-3 text-sm text-stone"
+          >
+            Out of stock
+          </button>
+        ) : (
+          <button
+            type="button"
+            className="flex items-center justify-center gap-2 rounded-full bg-onyx px-4 py-3 text-sm text-white"
+            onClick={handleAdd}
+          >
+            <ShoppingBag size={16} />
+            Add to cart
+          </button>
+        )}
         <button
           type="button"
           className="flex items-center justify-center gap-2 rounded-full border border-onyx/20 px-4 py-3 text-sm"
@@ -82,13 +94,15 @@ const ProductDetails = ({ product }) => {
           <Heart size={16} />
           {isWished(product.id) ? "Saved" : "Save for later"}
         </button>
-        <button
-          type="button"
-          className="sm:col-span-2 rounded-full bg-rose px-4 py-3 text-sm text-white"
-          onClick={handleBuyNow}
-        >
-          Buy now
-        </button>
+        {!isOutOfStock && (
+          <button
+            type="button"
+            className="sm:col-span-2 rounded-full bg-rose px-4 py-3 text-sm text-white"
+            onClick={handleBuyNow}
+          >
+            Buy now
+          </button>
+        )}
       </div>
       <div className="rounded-2xl border border-rose/40 bg-rose/10 p-4 text-xs text-stone">
         Shipping ₹{SHIPPING_RATES.near} near {DISPATCH_PINCODE} · ₹{SHIPPING_RATES.far} far · COD
@@ -99,4 +113,3 @@ const ProductDetails = ({ product }) => {
 };
 
 export default ProductDetails;
-

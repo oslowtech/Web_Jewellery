@@ -93,12 +93,12 @@ const Shop = () => {
           appearance: none;
           background: transparent;
           margin: 0;
-          /* FORCE both inputs to snap to the exact same horizontal line */
-          position: absolute !important;
-          top: 50% !important;
-          left: 0 !important;
-          width: 100% !important;
-          transform: translateY(-50%) !important;
+          width: 100%;
+        }
+
+        /* 2. Pull the second input UP by exactly its own height so it overlaps perfectly! */
+        input[type="range"] + input[type="range"] {
+          transform: translateY(-100%) !important;
         }
 
         input[type="range"]::-webkit-slider-thumb {
