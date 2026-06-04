@@ -48,8 +48,10 @@ const CartDrawer = () => {
   };
 
   const shippingInfo = pincode ? getShippingInfo(pincode) : null;
-  const shipping = pincode ? calculateShipping(pincode, total) : null;
-  const codAvailable = isCodAvailable(total);
+  const baseShipping = pincode ? calculateShipping(pincode, total) : null;
+  const freeShippingThreshold = 1500;
+  const shipping = total >= freeShippingThreshold ? 0 : baseShipping;
+  const codAvailable = total <= 1000;
   const offerEligible = total >= OFFER_THRESHOLD;
   const remainingForOffer = Math.max(0, OFFER_THRESHOLD - total);
 
@@ -159,8 +161,15 @@ const CartDrawer = () => {
                               </span>
                             ) : null}
                           </span>
-                          <span className="font-medium">{formatPrice(shipping ?? 0)}</span>
+                          <span className={`font-medium ${total >= freeShippingThreshold ? 'text-green-600' : ''}`}>
+                            {total >= freeShippingThreshold ? "FREE" : formatPrice(shipping ?? 0)}
+                          </span>
                         </div>
+                        {total < freeShippingThreshold && shipping !== null && (
+                          <p className="text-right text-xs text-green-600">
+                            Add {formatPrice(freeShippingThreshold - total)} more for FREE shipping!
+                          </p>
+                        )}
                         <div className="border-t border-white/70 pt-2 flex items-center justify-between font-semibold">
                           <span>Total</span>
                           <span>{formatPrice(total + (shipping ?? 0))}</span>
@@ -176,8 +185,8 @@ const CartDrawer = () => {
                   <div className="rounded-2xl bg-white/70 p-3 text-xs text-stone">
                     <p className={`font-medium ${codAvailable ? "text-onyx" : "text-rose"}`}>
                       {codAvailable
-                        ? `Cash on Delivery available up to ₹${COD_LIMIT}.`
-                        : `Cash on Delivery not available above ₹${COD_LIMIT}.`}
+                        ? `Cash on Delivery available up to ₹1000.`
+                        : `Cash on Delivery not available above ₹1000.`}
                     </p>
                     <div className="mt-3 rounded-xl border border-rose/20 bg-rose/10 p-3">
                       <p className="mb-1 font-medium text-onyx">Lucky Draw Offer!</p>

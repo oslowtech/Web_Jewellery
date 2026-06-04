@@ -109,8 +109,8 @@ const ProductDetails = ({ product }) => {
         )}
       </div>
       <div className="rounded-2xl border border-rose/40 bg-rose/10 p-4 text-xs text-stone">
-        Shipping ₹{SHIPPING_RATES.near} near {DISPATCH_PINCODE} · ₹{SHIPPING_RATES.far} far · COD
-        up to ₹{COD_LIMIT} · Spend ₹{OFFER_THRESHOLD}+ for lucky draw entry
+        Free shipping on orders over ₹1499 · COD
+        up to ₹1000 · Spend ₹{OFFER_THRESHOLD}+ for lucky draw entry
       </div>
     </div>
   );

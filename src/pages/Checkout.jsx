@@ -37,6 +37,13 @@ const Checkout = () => {
   }, [user, authLoading, navigate]);
 
   useEffect(() => {
+    if (paymentMethod === PAYMENT_METHODS.COD && totals.subtotal > 1000) {
+      setPaymentMethod(PAYMENT_METHODS.PREPAID);
+      addToast({ message: 'COD not available over ₹1000. Switched to Prepaid.', type: 'info' });
+    }
+  }, [totals.subtotal, paymentMethod, addToast]);
+
+  useEffect(() => {
     checkoutActions.setCartItems(cart || []);
   }, [cart, checkoutActions]);
 
@@ -47,8 +54,10 @@ const Checkout = () => {
     }, 0);
     
     const activePincode = checkoutState.shippingAddress?.postal_code || pincode;
-    const shipping = activePincode ? calculateShipping(activePincode, subtotal) : 0;
-    checkoutActions.setShippingCharge(shipping ?? 0);
+    const baseShipping = activePincode ? calculateShipping(activePincode, subtotal) : 0;
+    const freeShippingThreshold = 1500;
+    const finalShipping = subtotal >= freeShippingThreshold ? 0 : baseShipping;
+    checkoutActions.setShippingCharge(finalShipping ?? 0);
   }, [cart, pincode, checkoutState.shippingAddress, checkoutActions]);
 
   const loadAddresses = async () => {
@@ -437,17 +446,26 @@ const Checkout = () => {
               <h2 className="text-xl font-semibold mb-4">Payment Method</h2>
               <div className="space-y-3">
                 <label className="flex items-start p-4 border rounded-lg cursor-pointer hover:bg-gray-50">
-                  <input type="radio" name="paymentMethod" checked={paymentMethod === PAYMENT_METHODS.PREPAID} onChange={() => setPaymentMethod(PAYMENT_METHODS.PREPAID)} className="mt-1 mr-4" />
+                  <input
+                    type="radio"
+                    name="paymentMethod"
+                    checked={paymentMethod === PAYMENT_METHODS.PREPAID}
+                    onChange={() => setPaymentMethod(PAYMENT_METHODS.PREPAID)}
+                    className="mt-1 mr-4"
+                  />
                   <div>
                     <p className="font-semibold">Prepaid (UPI / Cards / NetBanking)</p>
                     <p className="text-sm text-gray-600">We will share a payment link via WhatsApp.</p>
                   </div>
                 </label>
-                <label className="flex items-start p-4 border rounded-lg cursor-pointer hover:bg-gray-50">
-                  <input type="radio" name="paymentMethod" checked={paymentMethod === PAYMENT_METHODS.COD} onChange={() => setPaymentMethod(PAYMENT_METHODS.COD)} className="mt-1 mr-4" />
+                <label className={`flex items-start p-4 border rounded-lg ${totals.subtotal > 1000 ? 'cursor-not-allowed bg-gray-50 opacity-60' : 'cursor-pointer hover:bg-gray-50'}`}>
+                  <input
+                    type="radio" name="paymentMethod" checked={paymentMethod === PAYMENT_METHODS.COD} onChange={() => setPaymentMethod(PAYMENT_METHODS.COD)} className="mt-1 mr-4"
+                    disabled={totals.subtotal > 1000}
+                  />
                   <div>
                     <p className="font-semibold">Cash on Delivery (COD)</p>
-                    <p className="text-sm text-gray-600">Pay when your order arrives. (+₹50 COD Fee)</p>
+                    <p className="text-sm text-gray-600">Not available on orders above ₹1000. (+₹50 COD Fee)</p>
                   </div>
                 </label>
               </div>
@@ -516,7 +534,11 @@ const Checkout = () => {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Shipping</span>
-                  <span>{formatPrice(totals.shippingCharge)}</span>
+                  {totals.subtotal >= 1500 ? (
+                    <span className="font-semibold text-green-600">FREE</span>
+                  ) : (
+                    <span>{formatPrice(totals.shippingCharge)}</span>
+                  )}
                 </div>
                 {totals.giftWrapFee > 0 && (
                   <div className="flex justify-between text-gray-600">
