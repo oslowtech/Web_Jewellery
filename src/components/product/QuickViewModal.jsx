@@ -23,6 +23,7 @@ const QuickViewModal = ({ product, onClose }) => {
       discountPrice: product.discountPrice,
       image: product.images[0],
       category: product.category,
+      stockQuantity: stockAvailable,
     });
     openCart();
     onClose();

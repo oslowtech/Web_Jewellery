@@ -1,6 +1,7 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Filter } from "lucide-react";
+import { Filter, X } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
 import useProducts from "../hooks/useProducts.js";
 import useDebounce from "../hooks/useDebounce.js";
 import usePageMeta from "../hooks/usePageMeta.js";
@@ -21,6 +22,19 @@ const Home = () => {
   const [query, setQuery] = useState("");
   const debouncedQuery = useDebounce(query, 300);
   const navigate = useNavigate();
+
+  const [showPoster, setShowPoster] = useState(false);
+
+  useEffect(() => {
+    const hasSeenPoster = sessionStorage.getItem("hasSeenPoster");
+    if (!hasSeenPoster) {
+      const timer = setTimeout(() => {
+        setShowPoster(true);
+        sessionStorage.setItem("hasSeenPoster", "true");
+      }, 1000); // Pops up 1 second after page loads
+      return () => clearTimeout(timer);
+    }
+  }, []);
 
   const suggestions = useMemo(() => {
     if (!debouncedQuery) return [];
@@ -191,6 +205,52 @@ const Home = () => {
         />
         <ProductGrid products={bestSellers} loading={loading} />
       </section>
+
+      <AnimatePresence>
+        {showPoster && (
+          <motion.div
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 px-4 backdrop-blur-sm"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setShowPoster(false)}
+          >
+            <motion.div
+              className="relative w-full max-w-md overflow-hidden rounded-3xl bg-cream shadow-2xl"
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                onClick={() => setShowPoster(false)}
+                className="absolute right-3 top-3 z-10 rounded-full bg-white/80 p-2 text-onyx shadow backdrop-blur-sm transition-colors hover:bg-white"
+                aria-label="Close"
+              >
+                <X size={20} />
+              </button>
+              <img
+                src="/poster.jpg"
+                alt="Special Offer"
+                className="h-auto w-full object-cover"
+              />
+              <div className="bg-cream p-5 text-center">
+                <h3 className="mb-2 font-display text-2xl text-onyx">Special Offer!</h3>
+                <p className="mb-5 text-sm text-stone">
+                  Don't miss out on our limited-time premium collections.
+                </p>
+                <Link
+                  to="/shop"
+                  onClick={() => setShowPoster(false)}
+                  className="block w-full rounded-full bg-rose py-3 text-center text-sm font-semibold text-white transition-colors hover:bg-rose/90 shadow-md"
+                >
+                  Buy Now
+                </Link>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

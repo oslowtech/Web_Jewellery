@@ -10,6 +10,11 @@ const ProductDetails = ({ product }) => {
   const { addItem, openCart, cart } = useCart();
   const { toggle, isWished } = useWishlist();
 
+  const stockAvailable = product.stockQuantity ?? product.stock_quantity ?? 0;
+  const cartItemMatch = (cart || []).find((item) => item.id === product.id);
+  const cartQty = cartItemMatch?.quantity || 0;
+  const isOutOfStock = stockAvailable <= cartQty;
+
   const cartItem = {
       id: product.id,
       name: product.name,
@@ -17,6 +22,7 @@ const ProductDetails = ({ product }) => {
       discountPrice: product.discountPrice,
       image: product.images[0],
       category: product.category,
+      stockQuantity: stockAvailable,
   };
 
   const handleAdd = () => {
@@ -28,11 +34,6 @@ const ProductDetails = ({ product }) => {
     addItem(cartItem);
     navigate("/checkout");
   };
-
-  const stockAvailable = product.stockQuantity ?? product.stock_quantity ?? 0;
-  const cartItemMatch = (cart || []).find(item => item.id === product.id);
-  const cartQty = cartItemMatch?.quantity || 0;
-  const isOutOfStock = stockAvailable <= cartQty;
 
   return (
     <div className="space-y-4 rounded-3xl border border-white/70 bg-white/80 p-6 shadow-soft">

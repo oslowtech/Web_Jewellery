@@ -2,6 +2,9 @@ import { Minus, Plus, Trash2 } from "lucide-react";
 import { formatPrice } from "../../utils/format.js";
 
 const CartItem = ({ item, onRemove, onUpdate }) => {
+  const maxStock = item.stockQuantity ?? Infinity;
+  const isMaxReached = item.quantity >= maxStock;
+
   return (
     <div className="flex items-center gap-3 rounded-2xl border border-white/70 bg-white/70 p-3">
       <img
@@ -25,8 +28,9 @@ const CartItem = ({ item, onRemove, onUpdate }) => {
           <span className="text-sm">{item.quantity}</span>
           <button
             type="button"
-            className="rounded-full border border-stone/40 p-1"
-            onClick={() => onUpdate(item.id, item.quantity + 1)}
+            disabled={isMaxReached}
+            className={`rounded-full border border-stone/40 p-1 ${isMaxReached ? "opacity-40 cursor-not-allowed bg-stone/10" : ""}`}
+            onClick={() => !isMaxReached && onUpdate(item.id, item.quantity + 1)}
             aria-label="Increase quantity"
           >
             <Plus size={14} />
