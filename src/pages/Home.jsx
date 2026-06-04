@@ -235,11 +235,7 @@ const Home = () => {
                 alt="Special Offer"
                 className="h-auto w-full object-cover"
               />
-              <div className="bg-cream p-6 text-center">
-                <h3 className="mb-2 font-display text-xl tracking-wide text-onyx">Exclusive Offer</h3>
-                <p className="mb-5 text-xs text-stone">
-                  Don't miss out on our limited-time premium collections.
-                </p>
+              <div className="bg-cream p-4">
                 <Link
                   to="/shop"
                   onClick={() => setShowPoster(false)}
