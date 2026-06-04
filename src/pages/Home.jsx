@@ -8,6 +8,7 @@ import SectionHeading from "../components/common/SectionHeading.jsx";
 import SearchBar from "../components/common/SearchBar.jsx";
 import ProductGrid from "../components/product/ProductGrid.jsx";
 import { buildProductSlug } from "../utils/slug.js";
+import heroVideo from "./hero-video.mp4";
 
 const Home = () => {
   usePageMeta({
@@ -53,7 +54,7 @@ const Home = () => {
           playsInline
           className="absolute inset-0 h-full w-full object-cover"
         >
-          <source src="/hero-video.mp4" type="video/mp4" />
+          <source src={heroVideo} type="video/mp4" />
           Your browser does not support the video tag.
         </video>
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/30 p-6 text-center text-white">
