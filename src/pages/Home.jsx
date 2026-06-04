@@ -230,7 +230,7 @@ const Home = () => {
                 <X size={20} />
               </button>
               <img
-                src="/poster.jpg"
+                src="./poster.jpg"
                 alt="Special Offer"
                 className="h-auto w-full object-cover"
               />
