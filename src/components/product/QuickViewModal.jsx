@@ -10,6 +10,8 @@ const QuickViewModal = ({ product, onClose }) => {
 
   if (!product) return null;
 
+  const isOutOfStock = product.stock_quantity <= 0 || product.stockQuantity <= 0;
+
   const handleAdd = () => {
     addItem({
       id: product.id,
@@ -69,13 +71,23 @@ const QuickViewModal = ({ product, onClose }) => {
                 ) : null}
               </div>
               <div className="flex gap-2 pt-2">
-                <button
-                  type="button"
-                  className="flex-1 rounded-full bg-onyx px-4 py-2 text-sm text-white"
-                  onClick={handleAdd}
-                >
-                  Add to Cart
-                </button>
+            {isOutOfStock ? (
+              <button
+                type="button"
+                disabled
+                className="flex-1 cursor-not-allowed rounded-full bg-stone/20 px-4 py-2 text-sm text-stone"
+              >
+                Out of stock
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="flex-1 rounded-full bg-onyx px-4 py-2 text-sm text-white"
+                onClick={handleAdd}
+              >
+                Add to Cart
+              </button>
+            )}
                 <Link
                   to={`/product/${buildProductSlug(product)}`}
                   className="flex-1 rounded-full border border-onyx/20 px-4 py-2 text-center text-sm"
