@@ -10,6 +10,7 @@ import SearchBar from "../components/common/SearchBar.jsx";
 import ProductGrid from "../components/product/ProductGrid.jsx";
 import { buildProductSlug } from "../utils/slug.js";
 import heroVideo from "./hero-video.mp4";
+import posterImg from "./poster.jpg";
 
 const Home = () => {
   usePageMeta({
@@ -230,7 +231,7 @@ const Home = () => {
                 <X size={20} />
               </button>
               <img
-                src="./poster.jpg"
+                src={posterImg}
                 alt="Special Offer"
                 className="h-auto w-full object-cover"
               />
