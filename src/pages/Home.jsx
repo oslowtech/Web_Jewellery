@@ -217,7 +217,7 @@ const Home = () => {
             onClick={() => setShowPoster(false)}
           >
             <motion.div
-              className="relative w-full max-w-md overflow-hidden rounded-3xl bg-cream shadow-2xl"
+              className="relative w-full max-w-sm overflow-hidden rounded-3xl bg-cream shadow-2xl"
               initial={{ scale: 0.9, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
@@ -235,9 +235,9 @@ const Home = () => {
                 alt="Special Offer"
                 className="h-auto w-full object-cover"
               />
-              <div className="bg-cream p-5 text-center">
-                <h3 className="mb-2 font-display text-2xl text-onyx">Special Offer!</h3>
-                <p className="mb-5 text-sm text-stone">
+              <div className="bg-cream p-6 text-center">
+                <h3 className="mb-2 font-display text-xl tracking-wide text-onyx">Exclusive Offer</h3>
+                <p className="mb-5 text-xs text-stone">
                   Don't miss out on our limited-time premium collections.
                 </p>
                 <Link
