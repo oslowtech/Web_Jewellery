@@ -45,31 +45,43 @@ const Home = () => {
 
   return (
     <div className="mx-auto max-w-6xl space-y-12 px-4 py-8">
-      <section className="rounded-[32px] bg-gradient-to-br from-white via-blush to-champagne p-6 shadow-soft">
-        <div className="space-y-4">
-          <p className="text-xs uppercase tracking-wide text-stone">
-            Premium Artificial Jewellery
-          </p>
-          <h1 className="font-display text-3xl md:text-4xl">
-            Soft luxe sparkle for every celebration
-          </h1>
-          <p className="max-w-md text-sm text-stone">
-            Explore handpicked artificial jewellery designed to feel premium,
-            feminine, and effortlessly elegant.
-          </p>
-          <div className="flex flex-col gap-3 sm:flex-row">
-            <Link
-              to="/shop"
-              className="rounded-full bg-onyx px-5 py-3 text-center text-sm text-white"
-            >
-              Shop new arrivals
-            </Link>
-            <Link
-              to="/shop"
-              className="rounded-full border border-onyx/20 px-5 py-3 text-center text-sm"
-            >
-              Explore collections
-            </Link>
+      <section className="relative h-[60vh] min-h-[400px] w-full overflow-hidden rounded-[32px] shadow-soft sm:h-[80vh]">
+        <video
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="absolute inset-0 h-full w-full object-cover"
+        >
+          <source src="hero-video.mp4" type="video/mp4" />
+          Your browser does not support the video tag.
+        </video>
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/30 p-6 text-center text-white">
+          <div className="max-w-2xl space-y-4">
+            <p className="text-xs uppercase tracking-widest text-white/80">
+              Premium Artificial Jewellery
+            </p>
+            <h1 className="drop-shadow-md font-display text-4xl sm:text-5xl md:text-6xl">
+              Soft luxe sparkle for every celebration
+            </h1>
+            <p className="drop-shadow-md mx-auto max-w-md text-sm text-white/90 sm:text-base">
+              Explore handpicked artificial jewellery designed to feel premium,
+              feminine, and effortlessly elegant.
+            </p>
+            <div className="mt-6 flex flex-col justify-center gap-3 sm:flex-row">
+              <Link
+                to="/shop"
+                className="rounded-full bg-white px-8 py-3 text-center text-sm font-medium text-onyx transition-colors hover:bg-cream"
+              >
+                Shop new arrivals
+              </Link>
+              <Link
+                to="/shop"
+                className="rounded-full border border-white/50 bg-black/20 px-8 py-3 text-center text-sm font-medium text-white backdrop-blur-sm transition-colors hover:bg-black/40"
+              >
+                Explore collections
+              </Link>
+            </div>
           </div>
         </div>
       </section>

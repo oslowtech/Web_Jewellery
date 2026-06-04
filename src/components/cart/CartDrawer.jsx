@@ -179,21 +179,25 @@ const CartDrawer = () => {
                         ? `Cash on Delivery available up to ₹${COD_LIMIT}.`
                         : `Cash on Delivery not available above ₹${COD_LIMIT}.`}
                     </p>
-                    <p className="mt-2 font-medium text-onyx">Lucky draw offer</p>
-                    <p className="mt-1">
-                      Spend ₹{OFFER_THRESHOLD}+ to get a chance to win Activa, iPhone, Smart
-                      TV, Iron, and more.
-                    </p>
-                    {offerEligible ? (
-                      <p className="mt-1 text-onyx">
-                        You&apos;re eligible for the lucky draw on this order.
+                    <div className="mt-3 rounded-xl border border-rose/20 bg-rose/10 p-3">
+                      <p className="mb-1 font-medium text-onyx">Lucky Draw Offer!</p>
+                      <p className="mb-2 text-xs text-stone">
+                        Spend ₹{OFFER_THRESHOLD}+ to get a chance to win Activa, iPhone, Smart TV, Iron, and more.
                       </p>
-                    ) : (
-                      <p className="mt-1">
-                        Add {formatPrice(remainingForOffer)} more to unlock the lucky draw
-                        entry.
-                      </p>
-                    )}
+                      <div className="mb-2 h-2 w-full rounded-full bg-stone/20">
+                        <div
+                          className="h-2 rounded-full bg-rose transition-all duration-500"
+                          style={{ width: `${Math.min((total / OFFER_THRESHOLD) * 100, 100)}%` }}
+                        ></div>
+                      </div>
+                      {offerEligible ? (
+                        <p className="text-xs font-bold text-green-600">🎉 Congratulations! You qualify for the Lucky Draw.</p>
+                      ) : (
+                        <p className="text-xs text-stone">
+                          Add <span className="font-bold text-rose">{formatPrice(remainingForOffer)}</span> more to unlock the lucky draw entry!
+                        </p>
+                      )}
+                    </div>
                   </div>
                   <button
                     type="button"
@@ -216,4 +220,3 @@ const CartDrawer = () => {
 };
 
 export default CartDrawer;
-

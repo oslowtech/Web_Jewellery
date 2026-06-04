@@ -18,6 +18,10 @@ const Cart = () => {
   const { cart, removeItem, updateItem, total } = useCart();
   const { actions: checkoutActions } = useCheckout();
 
+  const OFFER_THRESHOLD = 3000;
+  const progressPercentage = Math.min((total / OFFER_THRESHOLD) * 100, 100);
+  const amountLeft = Math.max(0, OFFER_THRESHOLD - total);
+
   const handleCheckout = () => {
     if (!user) {
       navigate('/login');
@@ -57,6 +61,24 @@ const Cart = () => {
             <span className="text-sm">Total</span>
             <span className="text-lg font-semibold">{formatPrice(total)}</span>
           </div>
+          
+          <div className="bg-rose/10 p-4 rounded-2xl border border-rose/20 my-4">
+            <p className="text-sm font-medium text-onyx mb-2">Lucky Draw Offer!</p>
+            <div className="w-full bg-stone/20 rounded-full h-2.5">
+              <div 
+                className="bg-rose h-2.5 rounded-full transition-all duration-500" 
+                style={{ width: `${progressPercentage}%` }}
+              ></div>
+            </div>
+            {progressPercentage < 100 ? (
+              <p className="text-xs text-stone mt-2">
+                Add items worth <span className="font-bold text-rose">{formatPrice(amountLeft)}</span> more to qualify for the lucky draw!
+              </p>
+            ) : (
+              <p className="text-xs text-green-600 font-bold mt-2">🎉 Congratulations! You qualify for the Lucky Draw.</p>
+            )}
+          </div>
+
           <button
             onClick={handleCheckout}
             className="w-full bg-rose text-cream py-3 rounded-lg font-semibold hover:bg-opacity-90 transition mt-6"

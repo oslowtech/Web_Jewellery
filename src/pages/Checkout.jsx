@@ -10,6 +10,7 @@ import { createOrder, validateOrderData } from '../services/orderService.js';
 import { PAYMENT_METHODS, finalizeManualOrder } from '../services/paymentService.js';
 import { calculateShipping } from '../utils/shipping.js';
 import { formatPrice } from '../utils/format.js';
+import { Sparkles } from 'lucide-react';
 
 const Checkout = () => {
   const navigate = useNavigate();
@@ -491,6 +492,19 @@ const Checkout = () => {
           <div className="lg:col-span-1">
             <div className="bg-white p-6 rounded-lg border border-gray-200 sticky top-24">
               <h3 className="text-lg font-semibold mb-4">Order Total</h3>
+              
+              {totals.subtotal >= 3000 && (
+                <div className="mb-6 rounded-2xl border border-green-200 bg-green-50 p-4">
+                  <p className="flex items-start gap-2 text-sm font-medium text-green-800">
+                    <Sparkles size={16} className="mt-0.5 shrink-0" />
+                    <span>You're eligible for the ₹3000 Purchase Lucky Draw!</span>
+                  </p>
+                  <p className="mt-2 text-xs text-green-600">
+                    Details regarding your lucky draw entry will be sent to you via WhatsApp once your order is confirmed.
+                  </p>
+                </div>
+              )}
+
               <div className="space-y-3 text-sm mb-4">
                 <div className="flex justify-between">
                   <span className="text-gray-600">Base Price (Excl. tax)</span>
