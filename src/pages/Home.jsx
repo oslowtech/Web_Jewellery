@@ -10,7 +10,7 @@ import SearchBar from "../components/common/SearchBar.jsx";
 import ProductGrid from "../components/product/ProductGrid.jsx";
 import { buildProductSlug } from "../utils/slug.js";
 import heroVideo from "./hero-video.mp4";
-import posterImg from "./poster.jpg";
+import posterImg from "./poster.png";
 
 const Home = () => {
   usePageMeta({
