@@ -7,7 +7,7 @@ import { COD_LIMIT, DISPATCH_PINCODE, OFFER_THRESHOLD, SHIPPING_RATES } from "..
 
 const ProductDetails = ({ product }) => {
   const navigate = useNavigate();
-  const { addItem, openCart } = useCart();
+  const { addItem, openCart, cart } = useCart();
   const { toggle, isWished } = useWishlist();
 
   const cartItem = {
@@ -29,7 +29,10 @@ const ProductDetails = ({ product }) => {
     navigate("/checkout");
   };
 
-  const isOutOfStock = product.stock_quantity <= 0;
+  const stockAvailable = product.stockQuantity ?? product.stock_quantity ?? 0;
+  const cartItemMatch = (cart || []).find(item => item.id === product.id);
+  const cartQty = cartItemMatch?.quantity || 0;
+  const isOutOfStock = stockAvailable <= cartQty;
 
   return (
     <div className="space-y-4 rounded-3xl border border-white/70 bg-white/80 p-6 shadow-soft">

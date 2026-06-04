@@ -7,11 +7,15 @@ import { formatPrice } from "../../utils/format.js";
 import { buildProductSlug } from "../../utils/slug.js";
 
 const ProductCard = ({ product, onQuickView }) => {
-  const { addItem, openCart } = useCart();
+  const { addItem, openCart, cart } = useCart();
   const { toggle, isWished } = useWishlist();
   const wished = isWished(product.id);
   const slug = buildProductSlug(product);
-  const isOutOfStock = product.stock_quantity <= 0;
+
+  const stockAvailable = product.stockQuantity ?? product.stock_quantity ?? 0;
+  const cartItemMatch = (cart || []).find(item => item.id === product.id);
+  const cartQty = cartItemMatch?.quantity || 0;
+  const isOutOfStock = stockAvailable <= cartQty;
 
   const handleAdd = () => {
     addItem({

@@ -6,11 +6,14 @@ import { buildProductSlug } from "../../utils/slug.js";
 import { useCart } from "../../context/CartContext.jsx";
 
 const QuickViewModal = ({ product, onClose }) => {
-  const { addItem, openCart } = useCart();
+  const { addItem, openCart, cart } = useCart();
 
   if (!product) return null;
 
-  const isOutOfStock = product.stock_quantity <= 0 || product.stockQuantity <= 0;
+  const stockAvailable = product.stockQuantity ?? product.stock_quantity ?? 0;
+  const cartItemMatch = (cart || []).find(item => item.id === product.id);
+  const cartQty = cartItemMatch?.quantity || 0;
+  const isOutOfStock = stockAvailable <= cartQty;
 
   const handleAdd = () => {
     addItem({
