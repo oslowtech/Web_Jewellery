@@ -282,7 +282,7 @@ const Admin = () => {
           product.imageUrls?.[2] || product.images?.[2] || "",
           product.imageUrls?.[3] || product.images?.[3] || "",
         ].map((item) => (item || "").trim()).filter(Boolean),
-        imageFiles: [], // Empty since we're just updating the order, not uploading new files
+        imageFiles: product.imageFiles ?? product.image_files ?? [],
         tags: Array.isArray(product.tags) ? product.tags : (typeof product.tags === 'string' ? product.tags.split(',') : []),
         stockQuantity: Number(product.stockQuantity ?? product.stock_quantity ?? 0),
         displayOrder: parsedOrder,
