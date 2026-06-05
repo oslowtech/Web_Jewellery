@@ -25,7 +25,7 @@ const createEmptyForm = () => ({
   imageFiles: "",
   tags: "",
   stockQuantity: 0,
-  displayOrder: 0,
+  displayOrder: 1,
   stock: true,
   featured: false,
   isNew: false,
@@ -71,9 +71,6 @@ const Admin = () => {
       // Map over products and overlay real-time edits if we are currently editing an item
       let filtered = products.map(p => {
         let pOrder = p.displayOrder ?? p.display_order ?? 0;
-        if (orderEdits[p.id] !== undefined) {
-          pOrder = Number(orderEdits[p.id]) || 0;
-        }
         if (form.id && p.id === form.id) {
           return {
             ...p,
@@ -99,7 +96,7 @@ const Admin = () => {
         return String(a.name).localeCompare(String(b.name));
       });
     },
-    [products, searchQuery, filterCategory, form.id, form.name, form.displayOrder, orderEdits]
+    [products, searchQuery, filterCategory, form.id, form.name, form.displayOrder]
   );
 
   const loadProducts = async () => {
@@ -108,6 +105,15 @@ const Admin = () => {
     try {
       const data = await fetchProducts({ fallbackToLocal: false });
       setProducts(data || []);
+      
+      // Automatically set the next available display order for new products
+      setForm((prev) => {
+        if (!prev.id && (prev.displayOrder === 0 || prev.displayOrder === 1)) {
+          const maxOrder = Math.max(0, ...(data || []).map(p => p.displayOrder ?? p.display_order ?? 0));
+          return { ...prev, displayOrder: maxOrder + 1 };
+        }
+        return prev;
+      });
     } catch (loadError) {
       const message = loadError?.message || "Unable to load products.";
       setError(message);
@@ -204,7 +210,10 @@ const Admin = () => {
       await saveProduct(payload);
       clearProductsCache();
       setSuccess(`Saved ${payload.name} (${payload.id})`);
-      setForm(createEmptyForm());
+      setForm((prev) => {
+        const maxOrder = Math.max(0, ...products.map(p => p.displayOrder ?? p.display_order ?? 0), payload.displayOrder);
+        return { ...createEmptyForm(), displayOrder: maxOrder + 1 };
+      });
       await loadProducts();
     } catch (saveError) {
       setError(saveError.message || "Unable to save product.");
@@ -364,7 +373,7 @@ const Admin = () => {
             </label>
             <label className="space-y-1 text-sm">
               <span>Display Order</span>
-              <input name="displayOrder" type="number" value={form.displayOrder} onChange={handleChange} required className="w-full rounded-xl border border-white/70 bg-white px-3 py-2" placeholder="0 = default" />
+              <input name="displayOrder" type="number" value={form.displayOrder} onChange={handleChange} required className="w-full rounded-xl border border-white/70 bg-white px-3 py-2" />
             </label>
           </div>
 
@@ -420,7 +429,10 @@ const Admin = () => {
               {saving ? "Saving..." : form.id ? "Update product" : "Publish product"}
             </button>
             {form.id && (
-              <button type="button" onClick={() => setForm(createEmptyForm())} className="rounded-full border border-stone/40 px-5 py-3 text-sm text-onyx transition-colors hover:bg-stone/10">
+              <button type="button" onClick={() => {
+                const maxOrder = Math.max(0, ...products.map(p => p.displayOrder ?? p.display_order ?? 0));
+                setForm({ ...createEmptyForm(), displayOrder: maxOrder + 1 });
+              }} className="rounded-full border border-stone/40 px-5 py-3 text-sm text-onyx transition-colors hover:bg-stone/10">
                 Cancel edit
               </button>
             )}

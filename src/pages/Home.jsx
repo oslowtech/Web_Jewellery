@@ -53,12 +53,20 @@ const Home = () => {
       .slice(0, 5);
   }, [debouncedQuery, products]);
 
-  const getOrder = (p) => p.displayOrder ?? p.display_order ?? 0;
-  const featured = products.filter((product) => product.featured).sort((a, b) => getOrder(a) - getOrder(b)).slice(0, 4);
-  const newArrivals = products.filter((product) => product.isNew).sort((a, b) => getOrder(a) - getOrder(b)).slice(0, 4);
-  const bestSellers = products.filter((product) => product.bestSeller).sort((a, b) => getOrder(a) - getOrder(b)).slice(0, 4);
-  const womensProducts = products.filter((product) => product.gender === "women").sort((a, b) => getOrder(a) - getOrder(b)).slice(0, 4);
-  const mensProducts = products.filter((product) => product.gender === "men").sort((a, b) => getOrder(a) - getOrder(b)).slice(0, 4);
+  const sortProducts = (list) => {
+    return list.sort((a, b) => {
+      const orderA = Number(a.displayOrder ?? a.display_order ?? 0);
+      const orderB = Number(b.displayOrder ?? b.display_order ?? 0);
+      if (orderA !== orderB) return orderA - orderB;
+      return String(a.name).localeCompare(String(b.name));
+    });
+  };
+
+  const featured = sortProducts(products.filter((product) => product.featured)).slice(0, 4);
+  const newArrivals = sortProducts(products.filter((product) => product.isNew)).slice(0, 4);
+  const bestSellers = sortProducts(products.filter((product) => product.bestSeller)).slice(0, 4);
+  const womensProducts = sortProducts(products.filter((product) => product.gender === "women")).slice(0, 4);
+  const mensProducts = sortProducts(products.filter((product) => product.gender === "men")).slice(0, 4);
   const categories = [...new Set(products.map((product) => product.category))];
 
   return (
