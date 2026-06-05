@@ -52,11 +52,11 @@ const Home = () => {
       .slice(0, 5);
   }, [debouncedQuery, products]);
 
-  const featured = products.filter((product) => product.featured).slice(0, 4);
-  const newArrivals = products.filter((product) => product.isNew).slice(0, 4);
-  const bestSellers = products.filter((product) => product.bestSeller).slice(0, 4);
-  const womensProducts = products.filter((product) => product.gender === "women").slice(0, 4);
-  const mensProducts = products.filter((product) => product.gender === "men").slice(0, 4);
+  const featured = products.filter((product) => product.featured).sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0)).slice(0, 4);
+  const newArrivals = products.filter((product) => product.isNew).sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0)).slice(0, 4);
+  const bestSellers = products.filter((product) => product.bestSeller).sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0)).slice(0, 4);
+  const womensProducts = products.filter((product) => product.gender === "women").sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0)).slice(0, 4);
+  const mensProducts = products.filter((product) => product.gender === "men").sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0)).slice(0, 4);
   const categories = [...new Set(products.map((product) => product.category))];
 
   return (

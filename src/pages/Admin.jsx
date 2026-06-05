@@ -25,6 +25,7 @@ const createEmptyForm = () => ({
   imageFiles: "",
   tags: "",
   stockQuantity: 0,
+  displayOrder: 0,
   stock: true,
   featured: false,
   isNew: false,
@@ -74,7 +75,12 @@ const Admin = () => {
       if (filterCategory) {
         filtered = filtered.filter(p => p.category === filterCategory);
       }
-      return filtered.sort((a, b) => String(a.name).localeCompare(String(b.name)));
+      return filtered.sort((a, b) => {
+        const orderA = a.displayOrder || 0;
+        const orderB = b.displayOrder || 0;
+        if (orderA !== orderB) return orderA - orderB;
+        return String(a.name).localeCompare(String(b.name));
+      });
     },
     [products, searchQuery, filterCategory]
   );
@@ -170,6 +176,7 @@ const Admin = () => {
           .map((item) => item.trim())
           .filter(Boolean),
         stockQuantity: Number(form.stockQuantity) || 0,
+        displayOrder: Number(form.displayOrder) || 0,
         stock: Boolean(form.stock),
         featured: Boolean(form.featured),
         isNew: Boolean(form.isNew),
@@ -206,6 +213,7 @@ const Admin = () => {
       imageFiles: product.imageFiles?.join(", ") || "",
       tags: product.tags?.join(", ") || "",
       stockQuantity: product.stockQuantity ?? product.stock_quantity ?? 0,
+      displayOrder: product.displayOrder ?? 0,
       stock: product.stock !== false,
       featured: product.featured || false,
       isNew: product.isNew || false,
@@ -313,6 +321,10 @@ const Admin = () => {
               <span>Stock Quantity</span>
               <input name="stockQuantity" type="number" min="0" value={form.stockQuantity} onChange={handleChange} required className="w-full rounded-xl border border-white/70 bg-white px-3 py-2" />
             </label>
+            <label className="space-y-1 text-sm">
+              <span>Display Order</span>
+              <input name="displayOrder" type="number" value={form.displayOrder} onChange={handleChange} required className="w-full rounded-xl border border-white/70 bg-white px-3 py-2" placeholder="0 = default" />
+            </label>
           </div>
 
           <label className="space-y-1 text-sm">
@@ -406,7 +418,7 @@ const Admin = () => {
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <p className="font-medium">{product.name}</p>
-                    <p className="text-xs text-stone">{product.id} · {product.category}{product.subCategory ? ` / ${product.subCategory}` : ""}</p>
+                <p className="text-xs text-stone">{product.id} · Order: {product.displayOrder || 0} · {product.category}{product.subCategory ? ` / ${product.subCategory}` : ""}</p>
                     <p className="mt-1 text-sm text-stone">{formatPrice(product.discountPrice || product.price)}</p>
                   </div>
                   <div className="flex items-center gap-2">

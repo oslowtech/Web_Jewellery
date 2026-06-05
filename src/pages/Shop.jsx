@@ -46,10 +46,15 @@ const Shop = () => {
   }, [meta.maxPrice, meta.minPrice]);
 
   const filtered = useMemo(() => {
-    return applyFilters(products, {
+    const result = [...applyFilters(products, {
       ...filters,
       query: debouncedQuery,
-    });
+    })];
+    // Only apply the custom sort order if the user hasn't selected a specific manual sort option
+    if (!filters.sort) {
+      result.sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
+    }
+    return result;
   }, [products, filters, debouncedQuery]);
 
   useEffect(() => {
