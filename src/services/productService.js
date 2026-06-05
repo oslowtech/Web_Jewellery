@@ -87,7 +87,7 @@ export const saveProduct = async (product) => {
     description: product.description,
     material: product.material,
     stock_quantity: product.stockQuantity || 0,
-    display_order: product.displayOrder || 0,
+    "displayOrder": product.displayOrder || 0,
     stock: product.stock,
     featured: product.featured,
     is_new: product.isNew,
