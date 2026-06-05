@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { Trash2 } from "lucide-react";
+import { Trash2, Edit } from "lucide-react";
 import usePageMeta from "../hooks/usePageMeta.js";
 import { useAuth } from "../context/AuthContext.jsx";
 import { deleteProduct, fetchProducts, saveProduct } from "../services/productService.js";
@@ -172,6 +172,32 @@ const Admin = () => {
     }
   };
 
+  const handleEdit = (product) => {
+    setForm({
+      id: product.id || "",
+      name: product.name || "",
+      price: product.price || "",
+      discountPrice: product.discountPrice || "",
+      category: product.category || "",
+      subCategory: product.subCategory || "",
+      gender: product.gender || "women",
+      description: product.description || "",
+      material: product.material || "Alloy",
+      imageUrl1: product.imageUrls?.[0] || product.images?.[0] || "",
+      imageUrl2: product.imageUrls?.[1] || product.images?.[1] || "",
+      imageUrl3: product.imageUrls?.[2] || product.images?.[2] || "",
+      imageUrl4: product.imageUrls?.[3] || product.images?.[3] || "",
+      imageFiles: product.imageFiles?.join(", ") || "",
+      tags: product.tags?.join(", ") || "",
+      stockQuantity: product.stockQuantity ?? product.stock_quantity ?? 0,
+      stock: product.stock !== false,
+      featured: product.featured || false,
+      isNew: product.isNew || false,
+      bestSeller: product.bestSeller || false,
+    });
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   const handleDelete = async (id) => {
     if (!window.confirm("Delete this product from Supabase?")) {
       return;
@@ -226,7 +252,7 @@ const Admin = () => {
       <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
         <form onSubmit={handleSubmit} className="space-y-4 rounded-3xl border border-white/70 bg-white/80 p-6 shadow-soft">
           <div>
-            <h2 className="font-display text-xl">Add a new product</h2>
+            <h2 className="font-display text-xl">{form.id ? "Edit product" : "Add a new product"}</h2>
             <p className="text-sm text-stone">Leave Product ID blank to auto-generate one.</p>
           </div>
 
@@ -314,9 +340,16 @@ const Admin = () => {
             ))}
           </div>
 
-          <button type="submit" disabled={saving} className="rounded-full bg-onyx px-5 py-3 text-sm text-white disabled:opacity-60">
-            {saving ? "Saving..." : "Publish product"}
-          </button>
+          <div className="flex items-center gap-3">
+            <button type="submit" disabled={saving} className="rounded-full bg-onyx px-5 py-3 text-sm text-white transition-colors hover:bg-onyx/90 disabled:opacity-60">
+              {saving ? "Saving..." : form.id ? "Update product" : "Publish product"}
+            </button>
+            {form.id && (
+              <button type="button" onClick={() => setForm(createEmptyForm())} className="rounded-full border border-stone/40 px-5 py-3 text-sm text-onyx transition-colors hover:bg-stone/10">
+                Cancel edit
+              </button>
+            )}
+          </div>
         </form>
 
         <div className="space-y-4 rounded-3xl border border-white/70 bg-white/80 p-6 shadow-soft">
@@ -334,9 +367,14 @@ const Admin = () => {
                     <p className="text-xs text-stone">{product.id} · {product.category}{product.subCategory ? ` / ${product.subCategory}` : ""}</p>
                     <p className="mt-1 text-sm text-stone">{formatPrice(product.discountPrice || product.price)}</p>
                   </div>
-                  <button type="button" onClick={() => handleDelete(product.id)} className="rounded-full border border-stone/30 p-2 text-rose" aria-label={`Delete ${product.name}`}>
-                    <Trash2 size={16} />
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button type="button" onClick={() => handleEdit(product)} className="rounded-full border border-stone/30 p-2 text-onyx transition-colors hover:bg-stone/10" aria-label={`Edit ${product.name}`}>
+                      <Edit size={16} />
+                    </button>
+                    <button type="button" onClick={() => handleDelete(product.id)} className="rounded-full border border-stone/30 p-2 text-rose transition-colors hover:bg-rose/10" aria-label={`Delete ${product.name}`}>
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
