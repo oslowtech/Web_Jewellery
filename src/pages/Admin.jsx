@@ -214,7 +214,14 @@ const Admin = () => {
         const maxOrder = Math.max(0, ...products.map(p => Number(p.displayOrder ?? p.display_order ?? 0)), Number(payload.displayOrder));
         return { ...createEmptyForm(), displayOrder: maxOrder + 1 };
       });
-      await loadProducts();
+      
+      // Update local state instantly instead of relying on a potentially cached re-fetch
+      setProducts((prev) => {
+        if (prev.find(p => p.id === payload.id)) {
+          return prev.map(p => p.id === payload.id ? { ...p, ...payload } : p);
+        }
+        return [...prev, payload];
+      });
     } catch (saveError) {
       setError(saveError.message || "Unable to save product.");
     } finally {
@@ -255,10 +262,11 @@ const Admin = () => {
     setError("");
     setSuccess("");
     try {
+      const parsedOrder = Number(newOrder) || 0;
       const payload = {
         id: product.id,
         name: product.name,
-        price: Number(product.price),
+        price: Number(product.price) || 0,
         discountPrice: product.discountPrice ?? product.discount_price ?? null,
         category: product.category || "",
         subCategory: product.subCategory ?? product.sub_category ?? "",
@@ -269,8 +277,8 @@ const Admin = () => {
         imageFiles: product.imageFiles ?? product.image_files ?? [],
         tags: product.tags ?? [],
         stockQuantity: Number(product.stockQuantity ?? product.stock_quantity ?? 0),
-        displayOrder: Number(newOrder) || 0,
-        display_order: Number(newOrder) || 0,
+        displayOrder: parsedOrder,
+        display_order: parsedOrder,
         stock: product.stock !== false,
         featured: Boolean(product.featured),
         isNew: Boolean(product.isNew ?? product.is_new),
@@ -280,7 +288,9 @@ const Admin = () => {
       clearProductsCache();
       setSuccess(`Updated order for ${product.name}`);
       setOrderEdits((prev) => { const next = { ...prev }; delete next[product.id]; return next; });
-      await loadProducts();
+      
+      // Immediately apply the new order to the list so it securely animates into place
+      setProducts((prev) => prev.map(p => p.id === product.id ? { ...p, ...payload } : p));
     } catch (saveError) {
       setError(saveError.message || "Unable to update order.");
     } finally {
@@ -300,7 +310,8 @@ const Admin = () => {
       await deleteProduct(id);
       clearProductsCache();
       setSuccess(`Deleted ${id}`);
-      await loadProducts();
+      // Instantly remove from UI
+      setProducts((prev) => prev.filter((p) => p.id !== id));
     } catch (deleteError) {
       setError(deleteError.message || "Unable to delete product.");
     }
