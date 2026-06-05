@@ -90,8 +90,8 @@ const Admin = () => {
         filtered = filtered.filter(p => p.category === filterCategory);
       }
       return filtered.sort((a, b) => {
-        const orderA = a.displayOrder ?? a.display_order ?? 0;
-        const orderB = b.displayOrder ?? b.display_order ?? 0;
+        const orderA = Number(a.displayOrder ?? a.display_order ?? 0);
+        const orderB = Number(b.displayOrder ?? b.display_order ?? 0);
         if (orderA !== orderB) return orderA - orderB;
         return String(a.name).localeCompare(String(b.name));
       });
@@ -109,7 +109,7 @@ const Admin = () => {
       // Automatically set the next available display order for new products
       setForm((prev) => {
         if (!prev.id && (prev.displayOrder === 0 || prev.displayOrder === 1)) {
-          const maxOrder = Math.max(0, ...(data || []).map(p => p.displayOrder ?? p.display_order ?? 0));
+          const maxOrder = Math.max(0, ...(data || []).map(p => Number(p.displayOrder ?? p.display_order ?? 0)));
           return { ...prev, displayOrder: maxOrder + 1 };
         }
         return prev;
@@ -211,7 +211,7 @@ const Admin = () => {
       clearProductsCache();
       setSuccess(`Saved ${payload.name} (${payload.id})`);
       setForm((prev) => {
-        const maxOrder = Math.max(0, ...products.map(p => p.displayOrder ?? p.display_order ?? 0), payload.displayOrder);
+        const maxOrder = Math.max(0, ...products.map(p => Number(p.displayOrder ?? p.display_order ?? 0)), Number(payload.displayOrder));
         return { ...createEmptyForm(), displayOrder: maxOrder + 1 };
       });
       await loadProducts();
@@ -250,15 +250,31 @@ const Admin = () => {
   };
 
   const handleUpdateOrder = async (product, newOrder) => {
-    if (newOrder === undefined) return;
+    if (newOrder === undefined || newOrder === "") return;
     setSaving(true);
     setError("");
     setSuccess("");
     try {
       const payload = {
-        ...product,
+        id: product.id,
+        name: product.name,
+        price: Number(product.price),
+        discountPrice: product.discountPrice ?? product.discount_price ?? null,
+        category: product.category || "",
+        subCategory: product.subCategory ?? product.sub_category ?? "",
+        gender: product.gender || "women",
+        description: product.description || "",
+        material: product.material || "Alloy",
+        imageUrls: product.imageUrls ?? product.images ?? [],
+        imageFiles: product.imageFiles ?? product.image_files ?? [],
+        tags: product.tags ?? [],
+        stockQuantity: Number(product.stockQuantity ?? product.stock_quantity ?? 0),
         displayOrder: Number(newOrder) || 0,
         display_order: Number(newOrder) || 0,
+        stock: product.stock !== false,
+        featured: Boolean(product.featured),
+        isNew: Boolean(product.isNew ?? product.is_new),
+        bestSeller: Boolean(product.bestSeller ?? product.best_seller),
       };
       await saveProduct(payload);
       clearProductsCache();
@@ -430,7 +446,7 @@ const Admin = () => {
             </button>
             {form.id && (
               <button type="button" onClick={() => {
-                const maxOrder = Math.max(0, ...products.map(p => p.displayOrder ?? p.display_order ?? 0));
+                const maxOrder = Math.max(0, ...products.map(p => Number(p.displayOrder ?? p.display_order ?? 0)));
                 setForm({ ...createEmptyForm(), displayOrder: maxOrder + 1 });
               }} className="rounded-full border border-stone/40 px-5 py-3 text-sm text-onyx transition-colors hover:bg-stone/10">
                 Cancel edit
