@@ -52,7 +52,7 @@ const Shop = () => {
     })];
     // Only apply the custom sort order if the user hasn't selected a specific manual sort option
     if (!filters.sort) {
-      result.sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
+      result.sort((a, b) => (a.displayOrder ?? a.display_order ?? 0) - (b.displayOrder ?? b.display_order ?? 0));
     }
     return result;
   }, [products, filters, debouncedQuery]);

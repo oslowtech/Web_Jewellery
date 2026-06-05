@@ -12,6 +12,8 @@ import { buildProductSlug } from "../utils/slug.js";
 import heroVideo from "./hero-video.mp4";
 import posterImg from "./poster.png";
 
+let hasShownPosterThisLoad = false;
+
 const Home = () => {
   usePageMeta({
     title: "Nagneshwari Jewels | Premium Artificial Jewellery",
@@ -27,11 +29,10 @@ const Home = () => {
   const [showPoster, setShowPoster] = useState(false);
 
   useEffect(() => {
-    const hasSeenPoster = sessionStorage.getItem("hasSeenPoster");
-    if (!hasSeenPoster) {
+    if (!hasShownPosterThisLoad) {
       const timer = setTimeout(() => {
         setShowPoster(true);
-        sessionStorage.setItem("hasSeenPoster", "true");
+        hasShownPosterThisLoad = true;
       }, 1000); // Pops up 1 second after page loads
       return () => clearTimeout(timer);
     }
@@ -52,11 +53,12 @@ const Home = () => {
       .slice(0, 5);
   }, [debouncedQuery, products]);
 
-  const featured = products.filter((product) => product.featured).sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0)).slice(0, 4);
-  const newArrivals = products.filter((product) => product.isNew).sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0)).slice(0, 4);
-  const bestSellers = products.filter((product) => product.bestSeller).sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0)).slice(0, 4);
-  const womensProducts = products.filter((product) => product.gender === "women").sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0)).slice(0, 4);
-  const mensProducts = products.filter((product) => product.gender === "men").sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0)).slice(0, 4);
+  const getOrder = (p) => p.displayOrder ?? p.display_order ?? 0;
+  const featured = products.filter((product) => product.featured).sort((a, b) => getOrder(a) - getOrder(b)).slice(0, 4);
+  const newArrivals = products.filter((product) => product.isNew).sort((a, b) => getOrder(a) - getOrder(b)).slice(0, 4);
+  const bestSellers = products.filter((product) => product.bestSeller).sort((a, b) => getOrder(a) - getOrder(b)).slice(0, 4);
+  const womensProducts = products.filter((product) => product.gender === "women").sort((a, b) => getOrder(a) - getOrder(b)).slice(0, 4);
+  const mensProducts = products.filter((product) => product.gender === "men").sort((a, b) => getOrder(a) - getOrder(b)).slice(0, 4);
   const categories = [...new Set(products.map((product) => product.category))];
 
   return (

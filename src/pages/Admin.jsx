@@ -67,7 +67,19 @@ const Admin = () => {
 
   const sortedProducts = useMemo(
     () => {
-      let filtered = [...products];
+      // Map over products and overlay real-time edits if we are currently editing an item
+      let filtered = products.map(p => {
+        if (form.id && p.id === form.id) {
+          return {
+            ...p,
+            name: form.name || p.name,
+            displayOrder: Number(form.displayOrder) || 0,
+            display_order: Number(form.displayOrder) || 0,
+          };
+        }
+        return p;
+      });
+
       if (searchQuery) {
         const q = searchQuery.toLowerCase();
         filtered = filtered.filter(p => p.name?.toLowerCase().includes(q) || p.id?.toLowerCase().includes(q));
@@ -76,13 +88,13 @@ const Admin = () => {
         filtered = filtered.filter(p => p.category === filterCategory);
       }
       return filtered.sort((a, b) => {
-        const orderA = a.displayOrder || 0;
-        const orderB = b.displayOrder || 0;
+        const orderA = a.displayOrder ?? a.display_order ?? 0;
+        const orderB = b.displayOrder ?? b.display_order ?? 0;
         if (orderA !== orderB) return orderA - orderB;
         return String(a.name).localeCompare(String(b.name));
       });
     },
-    [products, searchQuery, filterCategory]
+    [products, searchQuery, filterCategory, form.id, form.name, form.displayOrder]
   );
 
   const loadProducts = async () => {
@@ -177,6 +189,7 @@ const Admin = () => {
           .filter(Boolean),
         stockQuantity: Number(form.stockQuantity) || 0,
         displayOrder: Number(form.displayOrder) || 0,
+        display_order: Number(form.displayOrder) || 0,
         stock: Boolean(form.stock),
         featured: Boolean(form.featured),
         isNew: Boolean(form.isNew),
@@ -213,7 +226,7 @@ const Admin = () => {
       imageFiles: product.imageFiles?.join(", ") || "",
       tags: product.tags?.join(", ") || "",
       stockQuantity: product.stockQuantity ?? product.stock_quantity ?? 0,
-      displayOrder: product.displayOrder ?? 0,
+      displayOrder: product.displayOrder ?? product.display_order ?? 0,
       stock: product.stock !== false,
       featured: product.featured || false,
       isNew: product.isNew || false,
@@ -424,7 +437,7 @@ const Admin = () => {
                     )}
                     <div>
                       <p className="font-medium">{product.name}</p>
-                      <p className="text-xs text-stone">{product.id} · Order: {product.displayOrder || 0} · {product.category}{product.subCategory ? ` / ${product.subCategory}` : ""}</p>
+                      <p className="text-xs text-stone">{product.id} · Order: {product.displayOrder ?? product.display_order ?? 0} · {product.category}{product.subCategory ? ` / ${product.subCategory}` : ""}</p>
                       <p className="mt-1 text-sm text-stone">{formatPrice(product.discountPrice || product.price)}</p>
                     </div>
                   </div>
