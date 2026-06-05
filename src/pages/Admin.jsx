@@ -126,6 +126,7 @@ const Admin = () => {
   const clearProductsCache = () => {
     if (typeof window !== "undefined") {
       removeStorage(PRODUCTS_CACHE_KEY, sessionStorage);
+      try { removeStorage(PRODUCTS_CACHE_KEY, localStorage); } catch (e) {} // Ensure it's fully cleared
     }
   };
 
@@ -263,19 +264,26 @@ const Admin = () => {
     setSuccess("");
     try {
       const parsedOrder = Number(newOrder) || 0;
+      
+      // Ensure payload EXACTLY matches what the main form builds so the backend accepts it
       const payload = {
         id: product.id,
-        name: product.name,
+        name: (product.name || "").trim(),
         price: Number(product.price) || 0,
-        discountPrice: product.discountPrice ?? product.discount_price ?? null,
-        category: product.category || "",
-        subCategory: product.subCategory ?? product.sub_category ?? "",
+        discountPrice: (product.discountPrice ?? product.discount_price) ? Number(product.discountPrice ?? product.discount_price) : null,
+        category: (product.category || "").trim(),
+        subCategory: (product.subCategory ?? product.sub_category ?? "").trim(),
         gender: product.gender || "women",
-        description: product.description || "",
-        material: product.material || "Alloy",
-        imageUrls: product.imageUrls ?? product.images ?? [],
-        imageFiles: product.imageFiles ?? product.image_files ?? [],
-        tags: product.tags ?? [],
+        description: (product.description || "").trim(),
+        material: (product.material || "Alloy").trim(),
+        imageUrls: [
+          product.imageUrls?.[0] || product.images?.[0] || "",
+          product.imageUrls?.[1] || product.images?.[1] || "",
+          product.imageUrls?.[2] || product.images?.[2] || "",
+          product.imageUrls?.[3] || product.images?.[3] || "",
+        ].map((item) => (item || "").trim()).filter(Boolean),
+        imageFiles: [], // Empty since we're just updating the order, not uploading new files
+        tags: Array.isArray(product.tags) ? product.tags : (typeof product.tags === 'string' ? product.tags.split(',') : []),
         stockQuantity: Number(product.stockQuantity ?? product.stock_quantity ?? 0),
         displayOrder: parsedOrder,
         display_order: parsedOrder,
@@ -293,6 +301,7 @@ const Admin = () => {
       setProducts((prev) => prev.map(p => p.id === product.id ? { ...p, ...payload } : p));
     } catch (saveError) {
       setError(saveError.message || "Unable to update order.");
+      window.scrollTo({ top: 0, behavior: "smooth" }); // Ensure error is seen
     } finally {
       setSaving(false);
     }
