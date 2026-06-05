@@ -57,10 +57,26 @@ const Admin = () => {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [form, setForm] = useState(createEmptyForm());
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterCategory, setFilterCategory] = useState("");
+
+  const categories = useMemo(() => {
+    return [...new Set(products.map((p) => p.category))].filter(Boolean);
+  }, [products]);
 
   const sortedProducts = useMemo(
-    () => [...products].sort((a, b) => String(a.name).localeCompare(String(b.name))),
-    [products]
+    () => {
+      let filtered = [...products];
+      if (searchQuery) {
+        const q = searchQuery.toLowerCase();
+        filtered = filtered.filter(p => p.name?.toLowerCase().includes(q) || p.id?.toLowerCase().includes(q));
+      }
+      if (filterCategory) {
+        filtered = filtered.filter(p => p.category === filterCategory);
+      }
+      return filtered.sort((a, b) => String(a.name).localeCompare(String(b.name)));
+    },
+    [products, searchQuery, filterCategory]
   );
 
   const loadProducts = async () => {
@@ -306,6 +322,12 @@ const Admin = () => {
 
           <div className="space-y-1 text-sm">
             <span className="block font-medium">Product Images (Google Drive Links)</span>
+            {form.imageUrl1 && (
+              <div className="mb-3">
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-stone">Primary Image Preview</p>
+                <img src={form.imageUrl1} alt="Preview" className="h-32 w-32 rounded-xl object-cover shadow-soft border border-white/70" />
+              </div>
+            )}
             <div className="grid gap-2 md:grid-cols-2">
               <input name="imageUrl1" value={form.imageUrl1} onChange={handleChange} className="w-full rounded-xl border border-white/70 bg-white px-3 py-2" placeholder="Image Link 1 (Primary)" />
               <input name="imageUrl2" value={form.imageUrl2} onChange={handleChange} className="w-full rounded-xl border border-white/70 bg-white px-3 py-2" placeholder="Image Link 2" />
@@ -356,6 +378,26 @@ const Admin = () => {
           <div>
             <h2 className="font-display text-xl">Live catalog</h2>
             <p className="text-sm text-stone">{loading ? "Loading products..." : `${sortedProducts.length} products loaded`}</p>
+          </div>
+
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center border-b border-stone/10 pb-4">
+            <input
+              type="text"
+              placeholder="Search by name or ID..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="flex-1 rounded-xl border border-white/70 bg-white px-3 py-2 text-sm outline-none transition-colors focus:border-onyx/30"
+            />
+            <select
+              value={filterCategory}
+              onChange={(e) => setFilterCategory(e.target.value)}
+              className="rounded-xl border border-white/70 bg-white px-3 py-2 text-sm outline-none transition-colors focus:border-onyx/30"
+            >
+              <option value="">All Categories</option>
+              {categories.map((c) => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
           </div>
 
           <div className="space-y-3 max-h-[760px] overflow-y-auto pr-1">
