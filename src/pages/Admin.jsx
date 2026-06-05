@@ -416,10 +416,17 @@ const Admin = () => {
             {sortedProducts.map((product) => (
               <div key={product.id} className="rounded-2xl border border-white/70 bg-cream p-4">
                 <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="font-medium">{product.name}</p>
-                <p className="text-xs text-stone">{product.id} · Order: {product.displayOrder || 0} · {product.category}{product.subCategory ? ` / ${product.subCategory}` : ""}</p>
-                    <p className="mt-1 text-sm text-stone">{formatPrice(product.discountPrice || product.price)}</p>
+                  <div className="flex items-start gap-3">
+                    {(product.imageUrls?.[0] || product.images?.[0]) ? (
+                      <img src={product.imageUrls?.[0] || product.images?.[0]} alt={product.name} className="h-16 w-16 shrink-0 rounded-xl object-cover shadow-soft border border-white/70" />
+                    ) : (
+                      <div className="h-16 w-16 shrink-0 rounded-xl bg-stone/20" />
+                    )}
+                    <div>
+                      <p className="font-medium">{product.name}</p>
+                      <p className="text-xs text-stone">{product.id} · Order: {product.displayOrder || 0} · {product.category}{product.subCategory ? ` / ${product.subCategory}` : ""}</p>
+                      <p className="mt-1 text-sm text-stone">{formatPrice(product.discountPrice || product.price)}</p>
+                    </div>
                   </div>
                   <div className="flex items-center gap-2">
                     <button type="button" onClick={() => handleEdit(product)} className="rounded-full border border-stone/30 p-2 text-onyx transition-colors hover:bg-stone/10" aria-label={`Edit ${product.name}`}>
