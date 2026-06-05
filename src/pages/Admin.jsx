@@ -60,6 +60,7 @@ const Admin = () => {
   const [form, setForm] = useState(createEmptyForm());
   const [searchQuery, setSearchQuery] = useState("");
   const [filterCategory, setFilterCategory] = useState("");
+  const [orderEdits, setOrderEdits] = useState({});
 
   const categories = useMemo(() => {
     return [...new Set(products.map((p) => p.category))].filter(Boolean);
@@ -69,6 +70,10 @@ const Admin = () => {
     () => {
       // Map over products and overlay real-time edits if we are currently editing an item
       let filtered = products.map(p => {
+        let pOrder = p.displayOrder ?? p.display_order ?? 0;
+        if (orderEdits[p.id] !== undefined) {
+          pOrder = Number(orderEdits[p.id]) || 0;
+        }
         if (form.id && p.id === form.id) {
           return {
             ...p,
@@ -77,7 +82,7 @@ const Admin = () => {
             display_order: Number(form.displayOrder) || 0,
           };
         }
-        return p;
+        return { ...p, displayOrder: pOrder, display_order: pOrder };
       });
 
       if (searchQuery) {
@@ -94,7 +99,7 @@ const Admin = () => {
         return String(a.name).localeCompare(String(b.name));
       });
     },
-    [products, searchQuery, filterCategory, form.id, form.name, form.displayOrder]
+    [products, searchQuery, filterCategory, form.id, form.name, form.displayOrder, orderEdits]
   );
 
   const loadProducts = async () => {
@@ -233,6 +238,29 @@ const Admin = () => {
       bestSeller: product.bestSeller || false,
     });
     window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleUpdateOrder = async (product, newOrder) => {
+    if (newOrder === undefined) return;
+    setSaving(true);
+    setError("");
+    setSuccess("");
+    try {
+      const payload = {
+        ...product,
+        displayOrder: Number(newOrder) || 0,
+        display_order: Number(newOrder) || 0,
+      };
+      await saveProduct(payload);
+      clearProductsCache();
+      setSuccess(`Updated order for ${product.name}`);
+      setOrderEdits((prev) => { const next = { ...prev }; delete next[product.id]; return next; });
+      await loadProducts();
+    } catch (saveError) {
+      setError(saveError.message || "Unable to update order.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleDelete = async (id) => {
@@ -437,11 +465,28 @@ const Admin = () => {
                     )}
                     <div>
                       <p className="font-medium">{product.name}</p>
-                      <p className="text-xs text-stone">{product.id} · Order: {product.displayOrder ?? product.display_order ?? 0} · {product.category}{product.subCategory ? ` / ${product.subCategory}` : ""}</p>
+                      <p className="text-xs text-stone">{product.id} · {product.category}{product.subCategory ? ` / ${product.subCategory}` : ""}</p>
                       <p className="mt-1 text-sm text-stone">{formatPrice(product.discountPrice || product.price)}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
+                    <div className="mr-2 flex items-center gap-1 rounded-full border border-stone/30 bg-white px-2 py-1 shadow-sm">
+                      <span className="text-xs text-stone">Order:</span>
+                      <input
+                        type="number"
+                        className="w-12 bg-transparent text-center text-sm outline-none"
+                        value={orderEdits[product.id] !== undefined ? orderEdits[product.id] : (product.displayOrder ?? product.display_order ?? 0)}
+                        onChange={(e) => setOrderEdits(prev => ({ ...prev, [product.id]: e.target.value }))}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleUpdateOrder(product, orderEdits[product.id])}
+                        disabled={saving || orderEdits[product.id] === undefined}
+                        className="px-1 text-xs font-semibold text-rose transition-colors hover:text-rose/80 disabled:opacity-50"
+                      >
+                        Save
+                      </button>
+                    </div>
                     <button type="button" onClick={() => handleEdit(product)} className="rounded-full border border-stone/30 p-2 text-onyx transition-colors hover:bg-stone/10" aria-label={`Edit ${product.name}`}>
                       <Edit size={16} />
                     </button>
