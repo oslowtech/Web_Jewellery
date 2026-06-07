@@ -7,6 +7,7 @@ import { deleteProduct, fetchProducts, saveProduct } from "../services/productSe
 import { fetchCustomers } from "../services/userService.js";
 import { formatPrice } from "../utils/format.js";
 import { removeStorage } from "../utils/storage.js";
+import { supabase, isSupabaseConfigured } from "../lib/supabase.js";
 
 const createEmptyForm = () => ({
   id: "",
@@ -54,6 +55,7 @@ const Admin = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [customers, setCustomers] = useState([]);
+  const [pageViews, setPageViews] = useState([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -140,9 +142,26 @@ const Admin = () => {
     }
   };
 
+  const loadPageViews = async () => {
+    if (!isSupabaseConfigured || !supabase) return;
+    try {
+      const { data, error } = await supabase
+        .from('page_views')
+        .select('*')
+        .order('visited_at', { ascending: false })
+        .limit(50);
+      if (!error && data) {
+        setPageViews(data);
+      }
+    } catch (e) {
+      console.error("Error loading page views:", e);
+    }
+  };
+
   useEffect(() => {
     loadProducts();
     loadCustomers();
+    loadPageViews();
   }, []);
 
   useEffect(() => {
@@ -564,6 +583,35 @@ const Admin = () => {
               ))}
               {!customers.length ? (
                 <p className="text-sm text-stone">No customer profiles found.</p>
+              ) : null}
+            </div>
+          </div>
+
+          <div className="mt-6 border-t border-white/70 pt-6">
+            <h3 className="font-display text-lg">Recent Visitors</h3>
+            <p className="text-sm text-stone">Latest {pageViews.length} page views tracked</p>
+            <div className="mt-3 max-h-64 overflow-y-auto pr-2 space-y-2">
+              {pageViews.map((v) => {
+                const isMobile = v.user_agent?.toLowerCase().includes('mobile');
+                return (
+                  <div key={v.id} className="rounded-2xl border border-white/70 bg-cream p-3">
+                    <div className="flex justify-between items-start mb-1 gap-2">
+                      <p className="font-medium font-mono text-xs break-all text-onyx">{v.path}</p>
+                      <span className="text-[10px] text-stone shrink-0">
+                        {new Date(v.visited_at).toLocaleString('en-IN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
+                    <p className="text-[10px] text-stone line-clamp-2 leading-relaxed">{v.user_agent}</p>
+                    {isMobile ? (
+                      <span className="inline-block mt-1.5 text-[10px] bg-rose/10 text-rose px-2 py-0.5 rounded-full font-medium">Mobile</span>
+                    ) : (
+                      <span className="inline-block mt-1.5 text-[10px] bg-onyx/10 text-onyx px-2 py-0.5 rounded-full font-medium">Desktop</span>
+                    )}
+                  </div>
+                );
+              })}
+              {!pageViews.length ? (
+                <p className="text-sm text-stone">No visitor data found.</p>
               ) : null}
             </div>
           </div>
