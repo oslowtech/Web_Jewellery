@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext.jsx';
 import { useOrder } from '../context/OrderContext.jsx';
 import { useToast } from '../context/ToastContext.jsx';
 import { formatPrice } from '../utils/format.js';
+import { cancelUserOrder } from '../services/orderService.js';
 
 const ORDER_STATUS_COLORS = {
   pending: 'bg-yellow-100 text-yellow-800',
@@ -24,6 +25,7 @@ const OrderHistory = () => {
 
   const [selectedStatus, setSelectedStatus] = useState(null);
   const [filteredOrders, setFilteredOrders] = useState([]);
+  const [cancellingId, setCancellingId] = useState(null);
 
   useEffect(() => {
     if (authLoading) return;
@@ -47,6 +49,24 @@ const OrderHistory = () => {
 
   const handleViewOrder = (orderId) => {
     navigate(`/order-confirmation/${orderId}`);
+  };
+
+  const handleCancelOrder = async (e, orderId) => {
+    e.stopPropagation();
+    if (!window.confirm("Are you sure you want to cancel this order? This action cannot be undone.")) {
+      return;
+    }
+    
+    try {
+      setCancellingId(orderId);
+      await cancelUserOrder(orderId);
+      addToast({ message: 'Order cancelled successfully', type: 'success' });
+      await orderActions.loadOrders();
+    } catch (err) {
+      addToast({ message: err.message || 'Failed to cancel order', type: 'error' });
+    } finally {
+      setCancellingId(null);
+    }
   };
 
   const stats = helpers.getOrderStats();
@@ -194,15 +214,26 @@ const OrderHistory = () => {
                     <p className="text-sm text-gray-600">
                       Delivering to {order.shipping_address?.city}
                     </p>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleViewOrder(order.id);
-                      }}
-                      className="text-rose hover:underline text-sm font-semibold mt-2"
-                    >
-                      View Details →
-                    </button>
+                    <div className="flex gap-4 mt-2 justify-end">
+                      {['pending', 'payment_pending', 'paid', 'processing'].includes(order.status) && (
+                        <button
+                          onClick={(e) => handleCancelOrder(e, order.id)}
+                          disabled={cancellingId === order.id}
+                          className="text-red-600 hover:underline text-sm font-semibold disabled:opacity-50"
+                        >
+                          {cancellingId === order.id ? 'Cancelling...' : 'Cancel Order'}
+                        </button>
+                      )}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleViewOrder(order.id);
+                        }}
+                        className="text-rose hover:underline text-sm font-semibold"
+                      >
+                        View Details →
+                      </button>
+                    </div>
                   </div>
                 </div>
 
