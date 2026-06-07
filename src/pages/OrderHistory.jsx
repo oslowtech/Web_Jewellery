@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext.jsx';
 import { useOrder } from '../context/OrderContext.jsx';
 import { useToast } from '../context/ToastContext.jsx';
 import { formatPrice } from '../utils/format.js';
-import { cancelUserOrder } from '../services/orderService.js';
+import { updateOrderStatus } from '../services/orderService.js';
 
 const ORDER_STATUS_COLORS = {
   pending: 'bg-yellow-100 text-yellow-800',
@@ -59,7 +59,7 @@ const OrderHistory = () => {
     
     try {
       setCancellingId(orderId);
-      await cancelUserOrder(orderId);
+      await updateOrderStatus(orderId, 'cancelled', 'Cancelled by customer');
       addToast({ message: 'Order cancelled successfully', type: 'success' });
       await orderActions.loadOrders();
     } catch (err) {

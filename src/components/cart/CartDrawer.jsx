@@ -6,10 +6,7 @@ import EmptyState from "../common/EmptyState.jsx";
 import { formatPrice } from "../../utils/format.js";
 import {
   calculateShipping,
-  COD_LIMIT,
   getShippingInfo,
-  isCodAvailable,
-  OFFER_THRESHOLD,
   validatePincode,
 } from "../../utils/shipping.js";
 import { Link, useNavigate } from "react-router-dom";
@@ -52,6 +49,7 @@ const CartDrawer = () => {
   const freeShippingThreshold = 1500;
   const shipping = total >= freeShippingThreshold ? 0 : baseShipping;
   const codAvailable = total <= 1000;
+  const OFFER_THRESHOLD = 3000;
   const offerEligible = total >= OFFER_THRESHOLD;
   const remainingForOffer = Math.max(0, OFFER_THRESHOLD - total);
 
