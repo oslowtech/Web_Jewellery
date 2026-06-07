@@ -164,3 +164,23 @@ export const signOutUser = async () => {
     console.error("signOutUser error:", err?.message || err);
   }
 };
+
+export const resetPassword = async (email, redirectTo) => {
+  requireSupabase();
+  const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: redirectTo || `${window.location.origin}/update-password`,
+  });
+  
+  if (error) throw error;
+  return data;
+};
+
+export const updatePassword = async (newPassword) => {
+  requireSupabase();
+  const { data, error } = await supabase.auth.updateUser({ 
+    password: newPassword 
+  });
+  
+  if (error) throw error;
+  return data;
+};
