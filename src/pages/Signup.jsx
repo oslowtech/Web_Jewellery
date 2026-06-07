@@ -33,8 +33,14 @@ const Signup = () => {
     setSuccess("");
 
     try {
-      await signUp({ fullName, email, password });
-      setSuccess("Account created! Please check your email for the confirmation link.");
+      const data = await signUp({ fullName, email, password });
+      
+      // Supabase returns an empty identities array if the user already exists 
+      if (data?.user?.identities && data.user.identities.length === 0) {
+        setError("An account with this email already exists. Please log in.");
+      } else {
+        setSuccess("Account created! Please check your email for the confirmation link.");
+      }
     } catch (signupError) {
       setError(signupError.message || "Unable to create your account.");
     } finally {
