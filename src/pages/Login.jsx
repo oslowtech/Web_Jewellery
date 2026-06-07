@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 import usePageMeta from "../hooks/usePageMeta.js";
 import { useAuth } from "../context/AuthContext.jsx";
-import { sendLoginOtp, verifyOtp } from "../services/authService.js";
+import { sendLoginOtp } from "../services/authService.js";
 
 const Login = () => {
   const { signIn, signInWithGoogle, user, configured, loading, error: authError } = useAuth();
@@ -12,8 +12,6 @@ const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isOtpLogin, setIsOtpLogin] = useState(false);
-  const [needsOtp, setNeedsOtp] = useState(false);
-  const [otp, setOtp] = useState("");
   const [success, setSuccess] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -39,14 +37,8 @@ const Login = () => {
 
     try {
       if (isOtpLogin) {
-        if (needsOtp) {
-          await verifyOtp({ email, token: otp, type: "email" });
-          window.location.href = from; // Force complete refresh to apply auth state
-        } else {
-          await sendLoginOtp(email);
-          setNeedsOtp(true);
-          setSuccess("A 6-digit login code has been sent to your email.");
-        }
+        await sendLoginOtp(email, { emailRedirectTo: window.location.origin + from });
+        setSuccess("A magic link has been sent to your email. Click it to log in.");
       } else {
         await signIn({ email, password });
         navigate(from, { replace: true });
@@ -88,7 +80,7 @@ const Login = () => {
         </div>
         <label className="block space-y-1 text-sm">
           <span>Email</span>
-          <input value={email} onChange={(event) => setEmail(event.target.value)} type="email" required disabled={needsOtp} className="w-full rounded-xl border border-white/70 bg-white px-3 py-2 disabled:opacity-50" />
+          <input value={email} onChange={(event) => setEmail(event.target.value)} type="email" required className="w-full rounded-xl border border-white/70 bg-white px-3 py-2" />
         </label>
         
         {!isOtpLogin && (
@@ -101,22 +93,13 @@ const Login = () => {
           </label>
         )}
 
-        {needsOtp && (
-          <label className="block space-y-1 text-sm">
-            <span className="font-medium text-onyx">Verification Code (OTP)</span>
-            <input value={otp} onChange={(event) => setOtp(event.target.value)} type="text" required maxLength="6" placeholder="123456" className="w-full rounded-xl border border-onyx bg-white px-3 py-2 font-mono text-center tracking-widest outline-none focus:border-rose focus:ring-1 focus:ring-rose/30" />
-          </label>
-        )}
-
         <button disabled={submitting} className="w-full rounded-full bg-onyx py-3 text-sm text-white disabled:opacity-60">
-          {submitting ? "Processing..." : isOtpLogin ? (needsOtp ? "Verify Code" : "Send Login Code") : "Login"}
+          {submitting ? "Processing..." : isOtpLogin ? "Send Magic Link" : "Login"}
         </button>
 
-        {!needsOtp && (
-          <button type="button" onClick={() => setIsOtpLogin(!isOtpLogin)} className="w-full text-center text-sm font-medium text-stone hover:text-onyx transition-colors">
-            {isOtpLogin ? "Sign in with password instead" : "Sign in with email code (OTP)"}
-          </button>
-        )}
+        <button type="button" onClick={() => setIsOtpLogin(!isOtpLogin)} className="w-full text-center text-sm font-medium text-stone hover:text-onyx transition-colors">
+          {isOtpLogin ? "Sign in with password instead" : "Sign in with Magic Link"}
+        </button>
 
         <p className="text-sm text-stone">
           New here? <Link to="/signup" className="text-onyx underline">Create an account</Link>

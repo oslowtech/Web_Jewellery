@@ -76,21 +76,6 @@ export const signUpUser = async ({ fullName, email, password }) => {
 
   if (error) throw error;
 
-  if (data.user) {
-    const { error: profileError } = await supabase.from("profiles").upsert({
-      id: data.user.id,
-      email,
-      full_name: fullName,
-      role: "user",
-      address: "",
-      updated_at: new Date().toISOString(),
-    });
-
-    if (profileError && !isMissingProfilesTableError(profileError)) {
-      throw profileError;
-    }
-  }
-
   return data;
 };
 
@@ -185,9 +170,9 @@ export const updatePassword = async (newPassword) => {
   return data;
 };
 
-export const sendLoginOtp = async (email) => {
+export const sendLoginOtp = async (email, options = {}) => {
   requireSupabase();
-  const { data, error } = await supabase.auth.signInWithOtp({ email });
+  const { data, error } = await supabase.auth.signInWithOtp({ email, options });
   if (error) throw error;
   return data;
 };
