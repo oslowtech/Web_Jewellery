@@ -39,7 +39,10 @@ const Login = () => {
 
     try {
       if (isOtpLogin) {
-        await sendLoginOtp(email, { emailRedirectTo: window.location.origin + from });
+        await sendLoginOtp(email, { 
+          emailRedirectTo: window.location.origin + from,
+          shouldCreateUser: false // Prevents the login form from accidentally creating a new account
+        });
         setSuccess("A magic link has been sent to your email. Click it to log in.");
       } else {
         await signIn({ email, password });
