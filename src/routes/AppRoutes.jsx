@@ -18,6 +18,8 @@ const CheckoutPage = lazy(() => import("../pages/Checkout.jsx"));
 const OrderConfirmationPage = lazy(() => import("../pages/OrderConfirmation.jsx"));
 const OrderHistoryPage = lazy(() => import("../pages/OrderHistory.jsx"));
 const AdminOrdersPage = lazy(() => import("../pages/AdminOrders.jsx"));
+const ForgotPasswordPage = lazy(() => import("../pages/ForgotPassword.jsx"));
+const UpdatePasswordPage = lazy(() => import("../pages/UpdatePassword.jsx"));
 const NotFound = lazy(() => import("../pages/NotFound.jsx"));
 
 const PageTransition = ({ children }) => (
@@ -160,6 +162,22 @@ const AppRoutes = () => {
             element={
               <PageTransition>
                 <SignupPage />
+              </PageTransition>
+            }
+          />
+          <Route
+            path="/forgot-password"
+            element={
+              <PageTransition>
+                <ForgotPasswordPage />
+              </PageTransition>
+            }
+          />
+          <Route
+            path="/update-password"
+            element={
+              <PageTransition>
+                <UpdatePasswordPage />
               </PageTransition>
             }
           />
