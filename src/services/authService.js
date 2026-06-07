@@ -183,3 +183,14 @@ export const verifyOtp = async ({ email, token, type }) => {
   if (error) throw error;
   return data;
 };
+
+export const resendConfirmationEmail = async (email, options = {}) => {
+  requireSupabase();
+  const { data, error } = await supabase.auth.resend({
+    type: 'signup',
+    email,
+    options,
+  });
+  if (error) throw error;
+  return data;
+};

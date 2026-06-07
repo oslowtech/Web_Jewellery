@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 import usePageMeta from "../hooks/usePageMeta.js";
 import { useAuth } from "../context/AuthContext.jsx";
-import { sendLoginOtp } from "../services/authService.js";
+import { sendLoginOtp, resendConfirmationEmail } from "../services/authService.js";
 
 const Login = () => {
   const { signIn, signInWithGoogle, user, configured, loading, error: authError } = useAuth();
@@ -12,6 +12,7 @@ const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isOtpLogin, setIsOtpLogin] = useState(false);
+  const [needsConfirmation, setNeedsConfirmation] = useState(false);
   const [success, setSuccess] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -34,6 +35,7 @@ const Login = () => {
     setSubmitting(true);
     setError("");
     setSuccess("");
+    setNeedsConfirmation(false);
 
     try {
       if (isOtpLogin) {
@@ -44,7 +46,28 @@ const Login = () => {
         navigate(from, { replace: true });
       }
     } catch (loginError) {
-      setError(loginError.message || "Unable to process request.");
+      const msg = loginError.message || "";
+      if (msg.toLowerCase().includes("email not confirmed")) {
+        setError("Your email address has not been verified yet.");
+        setNeedsConfirmation(true);
+      } else {
+        setError(msg || "Unable to process request.");
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleResend = async () => {
+    setSubmitting(true);
+    setError("");
+    setSuccess("");
+    try {
+      await resendConfirmationEmail(email, { emailRedirectTo: window.location.origin + from });
+      setSuccess("A new confirmation link has been sent to your email. Please check your inbox!");
+      setNeedsConfirmation(false);
+    } catch (err) {
+      setError(err.message || "Unable to resend confirmation email.");
     } finally {
       setSubmitting(false);
     }
