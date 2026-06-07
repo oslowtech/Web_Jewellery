@@ -8,6 +8,7 @@ import usePageMeta from "../hooks/usePageMeta.js";
 import SectionHeading from "../components/common/SectionHeading.jsx";
 import SearchBar from "../components/common/SearchBar.jsx";
 import ProductGrid from "../components/product/ProductGrid.jsx";
+import useVisitorTracking from "../hooks/useVisitorTracking.js";
 import { buildProductSlug } from "../utils/slug.js";
 import heroVideo from "./hero-video.mp4";
 import posterImg from "./poster.png";
@@ -20,6 +21,9 @@ const Home = () => {
     description:
       "Discover premium artificial jewellery with elegant, mobile-first shopping.",
   });
+
+  // Start tracking visits quietly in the background
+  useVisitorTracking();
 
   const { products, loading } = useProducts();
   const [query, setQuery] = useState("");
