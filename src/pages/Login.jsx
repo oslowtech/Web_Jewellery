@@ -90,6 +90,21 @@ const Login = () => {
         {authError ? <p className="text-sm text-rose">{authError}</p> : null}
         {error ? <p className="text-sm text-rose">{error}</p> : null}
         {success ? <p className="text-sm text-emerald-700">{success}</p> : null}
+        
+        {needsConfirmation && (
+          <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 shadow-sm">
+            <p className="font-medium mb-3">Haven't received the link?</p>
+            <button
+              type="button"
+              onClick={handleResend}
+              disabled={submitting}
+              className="w-full rounded-full bg-amber-200 py-2.5 font-medium text-amber-900 transition-colors hover:bg-amber-300 disabled:opacity-50"
+            >
+              {submitting ? "Sending..." : "Resend confirmation email"}
+            </button>
+          </div>
+        )}
+
         <button
           type="button"
           onClick={handleGoogleLogin}
