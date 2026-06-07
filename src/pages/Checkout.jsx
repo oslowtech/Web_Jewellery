@@ -14,7 +14,7 @@ import { Sparkles } from 'lucide-react';
 
 const Checkout = () => {
   const navigate = useNavigate();
-  const { user, loading: authLoading, signOut } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { cart, pincode, clearCart } = useCart();
   const { state: checkoutState, actions: checkoutActions, totals, isCheckoutReady } = useCheckout();
   const { actions: orderActions } = useOrder();
@@ -134,9 +134,8 @@ const Checkout = () => {
       const finalizedOrder = await finalizeManualOrder(order.id, paymentMethod);
       clearCart();
       
-      addToast({ message: 'Order placed successfully! You have been signed out.', type: 'success' });
-      await signOut();
-      navigate('/login');
+      addToast({ message: 'Order placed successfully!', type: 'success' });
+      navigate('/cart');
     } catch (err) {
       const message = err.message || 'Failed to process order';
       setError(message);
