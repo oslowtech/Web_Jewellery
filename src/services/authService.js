@@ -184,3 +184,17 @@ export const updatePassword = async (newPassword) => {
   if (error) throw error;
   return data;
 };
+
+export const sendLoginOtp = async (email) => {
+  requireSupabase();
+  const { data, error } = await supabase.auth.signInWithOtp({ email });
+  if (error) throw error;
+  return data;
+};
+
+export const verifyOtp = async ({ email, token, type }) => {
+  requireSupabase();
+  const { data, error } = await supabase.auth.verifyOtp({ email, token, type });
+  if (error) throw error;
+  return data;
+};

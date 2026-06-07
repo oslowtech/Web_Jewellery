@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 import usePageMeta from "../hooks/usePageMeta.js";
 import { useAuth } from "../context/AuthContext.jsx";
+import { verifyOtp } from "../services/authService.js";
 
 const Signup = () => {
   const { signUp, signInWithGoogle, user, configured, loading } = useAuth();
@@ -9,6 +10,8 @@ const Signup = () => {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [otp, setOtp] = useState("");
+  const [needsOtp, setNeedsOtp] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -33,9 +36,15 @@ const Signup = () => {
     setSuccess("");
 
     try {
-      await signUp({ fullName, email, password });
-      setSuccess("Account created. You can now log in.");
-      navigate("/login", { replace: true });
+      if (needsOtp) {
+        await verifyOtp({ email, token: otp, type: "signup" });
+        setSuccess("Account verified successfully! Redirecting...");
+        window.location.href = "/profile"; // Force complete refresh to apply auth state
+      } else {
+        await signUp({ fullName, email, password });
+        setNeedsOtp(true);
+        setSuccess("Please check your email for the 6-digit verification code.");
+      }
     } catch (signupError) {
       setError(signupError.message || "Unable to create your account.");
     } finally {
@@ -72,18 +81,26 @@ const Signup = () => {
         </div>
         <label className="block space-y-1 text-sm">
           <span>Full name</span>
-          <input value={fullName} onChange={(event) => setFullName(event.target.value)} type="text" required className="w-full rounded-xl border border-white/70 bg-white px-3 py-2" />
+          <input value={fullName} onChange={(event) => setFullName(event.target.value)} type="text" required disabled={needsOtp} className="w-full rounded-xl border border-white/70 bg-white px-3 py-2 disabled:opacity-50" />
         </label>
         <label className="block space-y-1 text-sm">
           <span>Email</span>
-          <input value={email} onChange={(event) => setEmail(event.target.value)} type="email" required className="w-full rounded-xl border border-white/70 bg-white px-3 py-2" />
+          <input value={email} onChange={(event) => setEmail(event.target.value)} type="email" required disabled={needsOtp} className="w-full rounded-xl border border-white/70 bg-white px-3 py-2 disabled:opacity-50" />
         </label>
         <label className="block space-y-1 text-sm">
           <span>Password</span>
-          <input value={password} onChange={(event) => setPassword(event.target.value)} type="password" minLength="6" required className="w-full rounded-xl border border-white/70 bg-white px-3 py-2" />
+          <input value={password} onChange={(event) => setPassword(event.target.value)} type="password" minLength="6" required disabled={needsOtp} className="w-full rounded-xl border border-white/70 bg-white px-3 py-2 disabled:opacity-50" />
         </label>
+
+        {needsOtp && (
+          <label className="block space-y-1 text-sm">
+            <span className="font-medium text-onyx">Verification Code (OTP)</span>
+            <input value={otp} onChange={(event) => setOtp(event.target.value)} type="text" required maxLength="6" placeholder="123456" className="w-full rounded-xl border border-onyx bg-white px-3 py-2 font-mono text-center tracking-widest outline-none focus:border-rose focus:ring-1 focus:ring-rose/30" />
+          </label>
+        )}
+
         <button disabled={submitting} className="w-full rounded-full bg-onyx py-3 text-sm text-white disabled:opacity-60">
-          {submitting ? "Creating account..." : "Sign up"}
+          {submitting ? "Processing..." : needsOtp ? "Verify Code" : "Sign up"}
         </button>
         <p className="text-sm text-stone">
           Already have an account? <Link to="/login" className="text-onyx underline">Login</Link>
