@@ -86,14 +86,14 @@ const Home = () => {
   const featured = sortProducts(products.filter((product) => product.featured)).slice(0, 4);
   const newArrivals = sortProducts(products.filter((product) => product.isNew)).slice(0, 4);
   const bestSellers = sortProducts(products.filter((product) => product.bestSeller)).slice(0, 4);
-  const womensProducts = sortProducts(products.filter((product) => product.gender === "women")).slice(0, 4);
-  const mensProducts = sortProducts(products.filter((product) => product.gender === "men")).slice(0, 4);
+  const womensProducts = sortProducts(products.filter((product) => product.gender === "women" || product.gender === "both" || product.gender === "unisex")).slice(0, 4);
+  const mensProducts = sortProducts(products.filter((product) => product.gender === "men" || product.gender === "both" || product.gender === "unisex")).slice(0, 4);
   const categories = [...new Set(products.map((product) => product.category))];
 
   return (
     <div className="mx-auto max-w-6xl space-y-12 px-4 py-8">
       {slides.length > 0 && (
-        <section className="relative h-[40vh] min-h-[300px] w-full overflow-hidden rounded-[32px] shadow-soft sm:h-[60vh] bg-stone/5">
+        <section className="relative aspect-[16/9] w-full overflow-hidden rounded-[32px] bg-stone/5 shadow-soft">
           <AnimatePresence mode="wait">
             <motion.div
               key={currentSlide}

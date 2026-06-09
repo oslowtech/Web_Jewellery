@@ -446,9 +446,8 @@ const Admin = () => {
 
       {error ? (
         <div className="rounded-2xl border border-rose bg-rose/10 px-4 py-3 text-sm text-rose">
-          <p className="font-medium">Error loading products:</p>
+          <p className="font-medium">An error occurred:</p>
           <p className="mt-1">{error}</p>
-          <p className="mt-2 text-xs text-rose/80">Check that Supabase is configured with valid credentials and the "products" table exists.</p>
         </div>
       ) : null}
       {success ? (
@@ -509,7 +508,7 @@ const Admin = () => {
               <select name="gender" value={form.gender} onChange={handleChange} className="w-full rounded-xl border border-white/70 bg-white px-3 py-2">
                 <option value="women">Women</option>
                 <option value="men">Men</option>
-                <option value="unisex">Unisex</option>
+                <option value="both">Both (Women & Men)</option>
               </select>
             </label>
             <label className="space-y-1 text-sm">
