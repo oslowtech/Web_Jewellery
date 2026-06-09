@@ -1,4 +1,5 @@
 import { Heart, ShoppingBag } from "lucide-react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCart } from "../../context/CartContext.jsx";
 import { useWishlist } from "../../context/WishlistContext.jsx";
@@ -10,27 +11,50 @@ const ProductDetails = ({ product }) => {
   const { addItem, openCart, cart } = useCart();
   const { toggle, isWished } = useWishlist();
 
+  const [selectedSize, setSelectedSize] = useState("");
+  const [sizeError, setSizeError] = useState("");
+
   const stockAvailable = product.stockQuantity ?? product.stock_quantity ?? 0;
-  const cartItemMatch = (cart || []).find((item) => item.id === product.id);
-  const cartQty = cartItemMatch?.quantity || 0;
+  
+  // Calculate total quantity of this product already in the cart (across all sizes)
+  const cartQty = (cart || []).reduce((total, item) => {
+    return (item.id === product.id || item.id.startsWith(`${product.id}-`)) 
+      ? total + item.quantity 
+      : total;
+  }, 0);
+  
   const isOutOfStock = stockAvailable <= cartQty;
 
+  // Convert comma-separated string from Admin into an array of sizes
+  const ringSizes = product.ringSize ? product.ringSize.split(',').map(s => s.trim()).filter(Boolean) : [];
+
   const cartItem = {
-      id: product.id,
-      name: product.name,
+      id: selectedSize ? `${product.id}-${selectedSize}` : product.id,
+      name: selectedSize ? `${product.name} (Size: ${selectedSize})` : product.name,
       price: product.price,
       discountPrice: product.discountPrice,
       image: product.images[0],
       category: product.category,
       stockQuantity: stockAvailable,
+      ringSize: selectedSize || undefined,
   };
 
   const handleAdd = () => {
+    if (ringSizes.length > 0 && !selectedSize) {
+      setSizeError("Please select a size first");
+      return;
+    }
+    setSizeError("");
     addItem(cartItem);
     openCart();
   };
 
   const handleBuyNow = () => {
+    if (ringSizes.length > 0 && !selectedSize) {
+      setSizeError("Please select a size first");
+      return;
+    }
+    setSizeError("");
     addItem(cartItem);
     navigate("/checkout");
   };
@@ -59,6 +83,34 @@ const ProductDetails = ({ product }) => {
         <p className="font-medium">Material</p>
         <p className="text-stone">{product.material}</p>
       </div>
+
+      {ringSizes.length > 0 && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-medium text-onyx">Select Size</p>
+            {sizeError && <p className="text-xs font-medium text-rose">{sizeError}</p>}
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {ringSizes.map(size => (
+              <button
+                key={size}
+                onClick={() => {
+                  setSelectedSize(size);
+                  setSizeError("");
+                }}
+                className={`rounded-xl border px-4 py-2 text-sm font-medium transition-all ${
+                  selectedSize === size
+                    ? "border-onyx bg-onyx text-white shadow-md"
+                    : "border-stone/30 bg-white text-onyx hover:border-onyx/50 hover:bg-stone/5"
+                }`}
+              >
+                {size}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {product.tags?.length ? (
         <div className="flex flex-wrap gap-2">
           {product.tags.map((tag) => (
