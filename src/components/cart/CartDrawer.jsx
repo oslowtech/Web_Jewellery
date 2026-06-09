@@ -15,12 +15,14 @@ import { useAuth } from "../../context/AuthContext.jsx";
 import { useCheckout } from "../../context/CheckoutContext.jsx";
 
 const CartDrawer = () => {
-  const { isOpen, closeCart, cart, removeItem, updateItem, total, pincode, setPincode } = useCart();
+  const { isOpen, closeCart, cart, removeItem, updateItem, total, finalTotal, discountAmount, coupon, applyCoupon, removeCoupon, pincode, setPincode } = useCart();
   const { user } = useAuth();
   const { actions: checkoutActions } = useCheckout();
   const navigate = useNavigate();
   const [pincodeInput, setPincodeInput] = useState(pincode);
   const [pincodeError, setPincodeError] = useState("");
+  const [couponInput, setCouponInput] = useState("");
+  const [couponError, setCouponError] = useState("");
 
   const handlePincodeChange = (e) => {
     const value = e.target.value;
@@ -44,14 +46,25 @@ const CartDrawer = () => {
     setPincodeError("");
   };
 
+  const handleApplyCoupon = async () => {
+    if (!couponInput) return;
+    try {
+      setCouponError("");
+      await applyCoupon(couponInput);
+      setCouponInput("");
+    } catch (error) {
+      setCouponError(error.message);
+    }
+  };
+
   const shippingInfo = pincode ? getShippingInfo(pincode) : null;
   const baseShipping = pincode ? calculateShipping(pincode, total) : null;
   const freeShippingThreshold = 1500;
-  const shipping = total >= freeShippingThreshold ? 0 : baseShipping;
+  const shipping = finalTotal >= freeShippingThreshold ? 0 : baseShipping;
   const codAvailable = total <= 1000;
   const OFFER_THRESHOLD = 3000;
-  const offerEligible = total >= OFFER_THRESHOLD;
-  const remainingForOffer = Math.max(0, OFFER_THRESHOLD - total);
+  const offerEligible = finalTotal >= OFFER_THRESHOLD;
+  const remainingForOffer = Math.max(0, OFFER_THRESHOLD - finalTotal);
 
   const handleCheckout = () => {
     checkoutActions.setCartItems(cart);
@@ -143,6 +156,36 @@ const CartDrawer = () => {
                     ) : null}
                   </div>
 
+                  <div className="space-y-2 rounded-2xl bg-white/70 p-3">
+                    <label className="block text-xs font-medium">Coupon Code</label>
+                    {coupon ? (
+                      <div className="flex items-center justify-between rounded-lg bg-green-50 px-3 py-2 border border-green-200">
+                        <span className="text-sm font-medium text-green-700">{coupon.code} Applied!</span>
+                        <button onClick={removeCoupon} className="text-xs font-semibold text-rose hover:underline">Remove</button>
+                      </div>
+                    ) : (
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={couponInput}
+                          onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
+                          placeholder="Enter coupon code"
+                          className={`w-full rounded-lg border px-3 py-2 text-sm outline-none uppercase ${
+                            couponError ? "border-rose bg-rose/10" : "border-white/70 bg-white"
+                          }`}
+                        />
+                        <button
+                          type="button"
+                          onClick={handleApplyCoupon}
+                          className="rounded-lg bg-onyx px-4 py-2 text-xs font-medium text-white transition-colors hover:bg-onyx/90"
+                        >
+                          Apply
+                        </button>
+                      </div>
+                    )}
+                    {couponError && <p className="text-xs text-rose">{couponError}</p>}
+                  </div>
+
                   <div className="space-y-2 text-sm">
                     <div className="flex items-center justify-between">
                       <span>Subtotal</span>
@@ -159,18 +202,24 @@ const CartDrawer = () => {
                               </span>
                             ) : null}
                           </span>
-                          <span className={`font-medium ${total >= freeShippingThreshold ? 'text-green-600' : ''}`}>
-                            {total >= freeShippingThreshold ? "FREE" : formatPrice(shipping ?? 0)}
+                            <span className={`font-medium ${finalTotal >= freeShippingThreshold ? 'text-green-600' : ''}`}>
+                              {finalTotal >= freeShippingThreshold ? "FREE" : formatPrice(shipping ?? 0)}
                           </span>
                         </div>
-                        {total < freeShippingThreshold && shipping !== null && (
+                          {finalTotal < freeShippingThreshold && shipping !== null && (
                           <p className="text-right text-xs text-green-600">
-                            Add {formatPrice(freeShippingThreshold - total)} more for FREE shipping!
+                              Add {formatPrice(freeShippingThreshold - finalTotal)} more for FREE shipping!
                           </p>
                         )}
+                          {discountAmount > 0 && (
+                            <div className="flex items-center justify-between text-green-600">
+                              <span>Discount ({coupon?.code})</span>
+                              <span className="font-medium">-{formatPrice(discountAmount)}</span>
+                            </div>
+                          )}
                         <div className="border-t border-white/70 pt-2 flex items-center justify-between font-semibold">
                           <span>Total</span>
-                          <span>{formatPrice(total + (shipping ?? 0))}</span>
+                            <span>{formatPrice(finalTotal + (shipping ?? 0))}</span>
                         </div>
                       </>
                     ) : (
@@ -194,7 +243,7 @@ const CartDrawer = () => {
                       <div className="mb-2 h-2 w-full rounded-full bg-stone/20">
                         <div
                           className="h-2 rounded-full bg-rose transition-all duration-500"
-                          style={{ width: `${Math.min((total / OFFER_THRESHOLD) * 100, 100)}%` }}
+                          style={{ width: `${Math.min((finalTotal / OFFER_THRESHOLD) * 100, 100)}%` }}
                         ></div>
                       </div>
                       {offerEligible ? (

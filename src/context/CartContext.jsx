@@ -41,6 +41,8 @@ const cartReducer = (state, action) => {
       return { ...state, items: [] };
     case "SET_PINCODE":
       return { ...state, pincode: action.payload };
+    case "SET_COUPON":
+      return { ...state, coupon: action.payload };
     default:
       return state;
   }
@@ -48,7 +50,7 @@ const cartReducer = (state, action) => {
 
 export const CartProvider = ({ children }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [state, dispatch] = useReducer(cartReducer, { items: [], pincode: "" });
+  const [state, dispatch] = useReducer(cartReducer, { items: [], pincode: "", coupon: null });
   const [user, setUser] = useState(null);
   const [initialized, setInitialized] = useState(false);
   const [dbLoaded, setDbLoaded] = useState(false);
@@ -172,10 +174,50 @@ export const CartProvider = ({ children }) => {
     [state.items]
   );
 
+  // Extremely robust logic to maximize the bundle/coupon discount
+  const discountAmount = useMemo(() => {
+    if (!state.coupon) return 0;
+    const { discount_type, discount_value, required_quantity, valid_product_ids } = state.coupon;
+    
+    if (discount_type === 'fixed_amount') {
+      return Math.min(total, discount_value);
+    }
+    if (discount_type === 'percentage') {
+      return total * (discount_value / 100);
+    }
+    if (discount_type === 'bundle') {
+      const validItems = state.items.flatMap(item => {
+        const baseId = item.id.split('-')[0];
+        if (!valid_product_ids || valid_product_ids.length === 0 || valid_product_ids.includes(baseId)) {
+          return Array(item.quantity).fill(item.discountPrice || item.price);
+        }
+        return [];
+      });
+      
+      if (validItems.length >= required_quantity) {
+        validItems.sort((a, b) => b - a); // Group the highest priced eligible items into the bundle to maximize their savings
+        let bundleDiscount = 0;
+        const numberOfBundles = Math.floor(validItems.length / required_quantity);
+        for (let i = 0; i < numberOfBundles; i++) {
+          let bundleOriginalPrice = 0;
+          for (let j = 0; j < required_quantity; j++) {
+            bundleOriginalPrice += validItems[i * required_quantity + j];
+          }
+          bundleDiscount += Math.max(0, bundleOriginalPrice - discount_value);
+        }
+        return bundleDiscount;
+      }
+    }
+    return 0;
+  }, [state.coupon, state.items, total]);
+
   const value = {
     cart: state.items,
     pincode: state.pincode,
+    coupon: state.coupon,
     total,
+    discountAmount,
+    finalTotal: total - discountAmount,
     isOpen,
     openCart: () => setIsOpen(true),
     closeCart: () => setIsOpen(false),
@@ -185,6 +227,14 @@ export const CartProvider = ({ children }) => {
     updateItem: (id, quantity) => dispatch({ type: "UPDATE", payload: { id, quantity } }),
     clearCart: () => dispatch({ type: "CLEAR" }),
     setPincode: (pincode) => dispatch({ type: "SET_PINCODE", payload: pincode }),
+    applyCoupon: async (code) => {
+      if (!isSupabaseConfigured || !supabase) throw new Error("Supabase is not configured.");
+      const { data, error } = await supabase.from('coupons').select('*').eq('code', code.toUpperCase()).eq('is_active', true).single();
+      if (error || !data) throw new Error("Invalid or expired coupon code.");
+      dispatch({ type: "SET_COUPON", payload: data });
+      return data;
+    },
+    removeCoupon: () => dispatch({ type: "SET_COUPON", payload: null }),
   };
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

@@ -15,12 +15,12 @@ const Cart = () => {
 
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { cart, removeItem, updateItem, total } = useCart();
+  const { cart, removeItem, updateItem, total, finalTotal, discountAmount, coupon } = useCart();
   const { actions: checkoutActions } = useCheckout();
 
   const OFFER_THRESHOLD = 3000;
-  const progressPercentage = Math.min((total / OFFER_THRESHOLD) * 100, 100);
-  const amountLeft = Math.max(0, OFFER_THRESHOLD - total);
+  const progressPercentage = Math.min((finalTotal / OFFER_THRESHOLD) * 100, 100);
+  const amountLeft = Math.max(0, OFFER_THRESHOLD - finalTotal);
 
   const handleCheckout = () => {
     if (!user) {
@@ -57,9 +57,15 @@ const Cart = () => {
               onUpdate={updateItem}
             />
           ))}
+          {discountAmount > 0 && (
+            <div className="flex items-center justify-between rounded-2xl border border-green-200 bg-green-50 p-4 text-green-700">
+              <span className="text-sm font-medium">Discount Applied ({coupon?.code})</span>
+              <span className="text-lg font-semibold">-{formatPrice(discountAmount)}</span>
+            </div>
+          )}
           <div className="flex items-center justify-between rounded-2xl border border-white/70 bg-white/80 p-4">
             <span className="text-sm">Total</span>
-            <span className="text-lg font-semibold">{formatPrice(total)}</span>
+            <span className="text-lg font-semibold">{formatPrice(finalTotal)}</span>
           </div>
           
           <div className="bg-rose/10 p-4 rounded-2xl border border-rose/20 my-4">

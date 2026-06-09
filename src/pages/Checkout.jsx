@@ -15,7 +15,7 @@ import { Sparkles } from 'lucide-react';
 const Checkout = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
-  const { cart, pincode, clearCart } = useCart();
+  const { cart, pincode, clearCart, coupon, discountAmount: cartDiscountAmount, finalTotal } = useCart();
   const { state: checkoutState, actions: checkoutActions, totals, isCheckoutReady } = useCheckout();
   const { actions: orderActions } = useOrder();
   const { addToast } = useToast();
@@ -54,11 +54,11 @@ const Checkout = () => {
     }, 0);
     
     const activePincode = checkoutState.shippingAddress?.postal_code || pincode;
-    const baseShipping = activePincode ? calculateShipping(activePincode, subtotal) : 0;
+    const baseShipping = activePincode ? calculateShipping(activePincode, finalTotal) : 0;
     const freeShippingThreshold = 1500;
-    const finalShipping = subtotal >= freeShippingThreshold ? 0 : baseShipping;
+    const finalShipping = finalTotal >= freeShippingThreshold ? 0 : baseShipping;
     checkoutActions.setShippingCharge(finalShipping ?? 0);
-  }, [cart, pincode, checkoutState.shippingAddress, checkoutActions]);
+  }, [cart, pincode, checkoutState.shippingAddress, checkoutActions, finalTotal]);
 
   const loadAddresses = async () => {
     try {
@@ -109,12 +109,13 @@ const Checkout = () => {
             totalPrice: unitPrice * item.quantity
           };
         }),
-        totalAmount: totals.totalAmount + codFee,
+        totalAmount: totals.totalAmount + codFee - cartDiscountAmount,
         taxAmount: totals.taxAmount,
         shippingCharge: totals.shippingCharge,
-        discountAmount: totals.discountAmount,
+        discountAmount: totals.discountAmount + cartDiscountAmount,
         giftWrapFee: totals.giftWrapFee,
         codFee: codFee,
+        appliedCoupon: coupon?.code || null,
         gifting: checkoutState.gifting.isGift
           ? { ...checkoutState.gifting, is_gift: true }
           : null
@@ -405,11 +406,11 @@ const Checkout = () => {
                         </span>
                       </p>
                     )}
-                    {totals.discountAmount > 0 && (
+                    {(totals.discountAmount + cartDiscountAmount) > 0 && (
                       <p>
                         <span className="text-gray-600">Discount:</span>
                         <span className="float-right font-semibold text-green-600">
-                          -{formatPrice(totals.discountAmount)}
+                          -{formatPrice(totals.discountAmount + cartDiscountAmount)}
                         </span>
                       </p>
                     )}
@@ -499,7 +500,7 @@ const Checkout = () => {
                   className="flex-1 bg-rose text-cream py-3 rounded-lg font-semibold hover:bg-opacity-90 disabled:opacity-50"
                   disabled={!isCheckoutReady() || loading}
                 >
-              {loading ? 'Processing...' : `Place Order • ${formatPrice(totals.totalAmount + (paymentMethod === PAYMENT_METHODS.COD ? 50 : 0))}`}
+              {loading ? 'Processing...' : `Place Order • ${formatPrice(totals.totalAmount + (paymentMethod === PAYMENT_METHODS.COD ? 50 : 0) - cartDiscountAmount)}`}
                 </button>
               )}
             </div>
@@ -510,7 +511,7 @@ const Checkout = () => {
             <div className="bg-white p-6 rounded-lg border border-gray-200 sticky top-24">
               <h3 className="text-lg font-semibold mb-4">Order Total</h3>
               
-              {totals.subtotal >= 3000 && (
+              {finalTotal >= 3000 && (
                 <div className="mb-6 rounded-2xl border border-green-200 bg-green-50 p-4">
                   <p className="flex items-start gap-2 text-sm font-medium text-green-800">
                     <Sparkles size={16} className="mt-0.5 shrink-0" />
@@ -533,7 +534,7 @@ const Checkout = () => {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Shipping</span>
-                  {totals.subtotal >= 1500 ? (
+                  {finalTotal >= 1500 ? (
                     <span className="font-semibold text-green-600">FREE</span>
                   ) : (
                     <span>{formatPrice(totals.shippingCharge)}</span>
@@ -551,17 +552,17 @@ const Checkout = () => {
                 <span>{formatPrice(50)}</span>
               </div>
             )}
-                {totals.discountAmount > 0 && (
+                {(totals.discountAmount + cartDiscountAmount) > 0 && (
                   <div className="flex justify-between text-green-600">
                     <span>Discount</span>
-                    <span>-{formatPrice(totals.discountAmount)}</span>
+                    <span>-{formatPrice(totals.discountAmount + cartDiscountAmount)}</span>
                   </div>
                 )}
               </div>
               <div className="border-t pt-4">
                 <div className="flex justify-between font-bold text-lg">
                   <span>Total</span>
-              <span>{formatPrice(totals.totalAmount + (paymentMethod === PAYMENT_METHODS.COD ? 50 : 0))}</span>
+              <span>{formatPrice(totals.totalAmount + (paymentMethod === PAYMENT_METHODS.COD ? 50 : 0) - cartDiscountAmount)}</span>
                 </div>
               </div>
             </div>

@@ -8,6 +8,7 @@ import { fetchCustomers } from "../services/userService.js";
 import { formatPrice } from "../utils/format.js";
 import { removeStorage } from "../utils/storage.js";
 import { supabase, isSupabaseConfigured } from "../lib/supabase.js";
+import { fetchSlides, saveSlide, deleteSlide, fetchCoupons, saveCoupon, deleteCoupon } from "../services/contentService.js";
 
 const createEmptyForm = () => ({
   id: "",
@@ -64,6 +65,12 @@ const Admin = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterCategory, setFilterCategory] = useState("");
   const [orderEdits, setOrderEdits] = useState({});
+  
+  const [activeTab, setActiveTab] = useState("products");
+  const [slides, setSlides] = useState([]);
+  const [slideForm, setSlideForm] = useState({ id: "", image_url: "", link_url: "", display_order: 0 });
+  const [coupons, setCoupons] = useState([]);
+  const [couponForm, setCouponForm] = useState({ id: "", code: "", discount_type: "bundle", discount_value: "", min_purchase_amount: 0, required_quantity: 0, valid_product_ids: "", is_active: true });
 
   const categories = useMemo(() => {
     return [...new Set(products.map((p) => p.category))].filter(Boolean);
@@ -163,7 +170,19 @@ const Admin = () => {
     loadProducts();
     loadCustomers();
     loadPageViews();
+    loadSlidesAndCoupons();
   }, []);
+
+  const loadSlidesAndCoupons = async () => {
+    try {
+      const loadedSlides = await fetchSlides();
+      setSlides(loadedSlides || []);
+      const loadedCoupons = await fetchCoupons();
+      setCoupons(loadedCoupons || []);
+    } catch (e) {
+      console.error("Failed to load slides or coupons", e);
+    }
+  };
 
   useEffect(() => {
     if (process.env.NODE_ENV === "development") {
@@ -349,6 +368,58 @@ const Admin = () => {
     }
   };
 
+  const handleSaveSlide = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      const payload = { ...slideForm };
+      if (!payload.id) delete payload.id;
+      await saveSlide(payload);
+      setSuccess("Slide saved!");
+      setSlideForm({ id: "", image_url: "", link_url: "", display_order: 0 });
+      loadSlidesAndCoupons();
+    } catch (err) {
+      setError(err.message || "Failed to save slide");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSaveCoupon = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      const payload = { ...couponForm, code: couponForm.code.toUpperCase() };
+      if (!payload.id) delete payload.id;
+      await saveCoupon(payload);
+      setSuccess("Coupon saved!");
+      setCouponForm({ id: "", code: "", discount_type: "bundle", discount_value: "", min_purchase_amount: 0, required_quantity: 0, valid_product_ids: "", is_active: true });
+      loadSlidesAndCoupons();
+    } catch (err) {
+      setError(err.message || "Failed to save coupon");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeleteSlide = async (id) => {
+    if (window.confirm("Delete slide?")) {
+      try {
+        await deleteSlide(id);
+        loadSlidesAndCoupons();
+      } catch (err) { setError(err.message); }
+    }
+  };
+
+  const handleDeleteCoupon = async (id) => {
+    if (window.confirm("Delete coupon?")) {
+      try {
+        await deleteCoupon(id);
+        loadSlidesAndCoupons();
+      } catch (err) { setError(err.message); }
+    }
+  };
+
   return (
     <div className="mx-auto max-w-6xl space-y-8 px-4 py-10">
       <div className="space-y-2">
@@ -382,6 +453,21 @@ const Admin = () => {
         </div>
       ) : null}
 
+      <div className="flex gap-4 border-b border-stone/20 pb-4 overflow-x-auto mb-6">
+        {["products", "slides", "coupons"].map((tab) => (
+          <button
+            key={tab}
+            onClick={() => { setActiveTab(tab); setError(""); setSuccess(""); }}
+            className={`px-4 py-2 rounded-full text-sm font-medium capitalize transition-colors ${
+              activeTab === tab ? "bg-onyx text-white shadow-md" : "bg-stone/10 text-onyx hover:bg-stone/20"
+            }`}
+          >
+            Manage {tab}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === "products" && (
       <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
         <form onSubmit={handleSubmit} className="space-y-4 rounded-3xl border border-white/70 bg-white/80 p-6 shadow-soft">
           <div>
@@ -625,6 +711,114 @@ const Admin = () => {
           </div>
         </div>
       </div>
+      )}
+
+      {activeTab === "slides" && (
+        <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+          <form onSubmit={handleSaveSlide} className="space-y-4 rounded-3xl border border-white/70 bg-white/80 p-6 shadow-soft">
+            <h2 className="font-display text-xl">{slideForm.id ? "Edit Slide" : "Add Slide"} (Max 4 recommended)</h2>
+            <label className="block space-y-1 text-sm">
+              <span>Image URL</span>
+              <input required value={slideForm.image_url} onChange={e => setSlideForm({...slideForm, image_url: e.target.value})} className="w-full rounded-xl border border-white/70 bg-white px-3 py-2" />
+            </label>
+            <label className="block space-y-1 text-sm">
+              <span>Link URL (e.g. /shop or /product/JW1234)</span>
+              <input value={slideForm.link_url} onChange={e => setSlideForm({...slideForm, link_url: e.target.value})} className="w-full rounded-xl border border-white/70 bg-white px-3 py-2" />
+            </label>
+            <label className="block space-y-1 text-sm">
+              <span>Display Order</span>
+              <input type="number" required value={slideForm.display_order} onChange={e => setSlideForm({...slideForm, display_order: e.target.value})} className="w-full rounded-xl border border-white/70 bg-white px-3 py-2" />
+            </label>
+            <div className="flex gap-3">
+              <button type="submit" disabled={saving} className="rounded-full bg-onyx px-5 py-3 text-sm text-white transition-colors hover:bg-onyx/90">Save Slide</button>
+              {slideForm.id && <button type="button" onClick={() => setSlideForm({ id: "", image_url: "", link_url: "", display_order: 0 })} className="rounded-full border border-stone/40 px-5 py-3 text-sm transition-colors hover:bg-stone/10">Cancel</button>}
+            </div>
+          </form>
+          
+          <div className="space-y-4 rounded-3xl border border-white/70 bg-white/80 p-6 shadow-soft">
+            <h2 className="font-display text-xl">Active Slides</h2>
+            <div className="space-y-3">
+              {slides.map(slide => (
+                <div key={slide.id} className="flex gap-4 rounded-2xl border border-white/70 bg-cream p-3 items-center shadow-sm">
+                  <img src={slide.image_url} className="h-16 w-24 object-cover rounded-lg shadow-sm" alt="Slide" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium truncate">{slide.link_url || "No link"}</p>
+                    <p className="text-xs text-stone">Order: {slide.display_order}</p>
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <button onClick={() => setSlideForm(slide)} className="text-xs font-semibold text-onyx hover:underline">Edit</button>
+                    <button onClick={() => handleDeleteSlide(slide.id)} className="text-xs font-semibold text-rose hover:underline">Delete</button>
+                  </div>
+                </div>
+              ))}
+              {slides.length === 0 && <p className="text-sm text-stone italic">No slides found.</p>}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activeTab === "coupons" && (
+        <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+          <form onSubmit={handleSaveCoupon} className="space-y-4 rounded-3xl border border-white/70 bg-white/80 p-6 shadow-soft">
+            <h2 className="font-display text-xl">{couponForm.id ? "Edit Coupon" : "Add Coupon"}</h2>
+            <div className="grid gap-4 md:grid-cols-2">
+              <label className="space-y-1 text-sm">
+                <span>Coupon Code</span>
+                <input required value={couponForm.code} onChange={e => setCouponForm({...couponForm, code: e.target.value})} placeholder="3FOR999" className="w-full rounded-xl border border-white/70 bg-white px-3 py-2 uppercase" />
+              </label>
+              <label className="space-y-1 text-sm">
+                <span>Discount Type</span>
+                <select value={couponForm.discount_type} onChange={e => setCouponForm({...couponForm, discount_type: e.target.value})} className="w-full rounded-xl border border-white/70 bg-white px-3 py-2">
+                  <option value="bundle">Bundle (e.g. 3 for 999)</option>
+                  <option value="fixed_amount">Fixed Amount</option>
+                  <option value="percentage">Percentage</option>
+                </select>
+              </label>
+              <label className="space-y-1 text-sm">
+                <span>Discount Value</span>
+                <input type="number" required value={couponForm.discount_value} onChange={e => setCouponForm({...couponForm, discount_value: e.target.value})} placeholder="999" className="w-full rounded-xl border border-white/70 bg-white px-3 py-2" />
+              </label>
+              <label className="space-y-1 text-sm">
+                <span>Required Quantity (for bundles)</span>
+                <input type="number" value={couponForm.required_quantity} onChange={e => setCouponForm({...couponForm, required_quantity: e.target.value})} placeholder="3" className="w-full rounded-xl border border-white/70 bg-white px-3 py-2" />
+              </label>
+            </div>
+            <label className="block space-y-1 text-sm">
+              <span>Valid Product IDs (Comma separated, empty for all)</span>
+              <input value={Array.isArray(couponForm.valid_product_ids) ? couponForm.valid_product_ids.join(', ') : couponForm.valid_product_ids} onChange={e => setCouponForm({...couponForm, valid_product_ids: e.target.value})} placeholder="JW3001, JW3002" className="w-full rounded-xl border border-white/70 bg-white px-3 py-2" />
+            </label>
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={couponForm.is_active} onChange={e => setCouponForm({...couponForm, is_active: e.target.checked})} />
+              <span>Is Active</span>
+            </label>
+            <div className="flex gap-3">
+              <button type="submit" disabled={saving} className="rounded-full bg-onyx px-5 py-3 text-sm text-white transition-colors hover:bg-onyx/90">Save Coupon</button>
+              {couponForm.id && <button type="button" onClick={() => setCouponForm({ id: "", code: "", discount_type: "bundle", discount_value: "", min_purchase_amount: 0, required_quantity: 0, valid_product_ids: "", is_active: true })} className="rounded-full border border-stone/40 px-5 py-3 text-sm transition-colors hover:bg-stone/10">Cancel</button>}
+            </div>
+          </form>
+          
+          <div className="space-y-4 rounded-3xl border border-white/70 bg-white/80 p-6 shadow-soft">
+            <h2 className="font-display text-xl">Active Coupons</h2>
+            <div className="space-y-3">
+              {coupons.map(coupon => (
+                <div key={coupon.id} className="flex justify-between rounded-2xl border border-white/70 bg-cream p-4 shadow-sm">
+                  <div>
+                    <p className="font-bold text-onyx">{coupon.code}</p>
+                    <p className="text-xs font-medium text-stone mt-1">{coupon.discount_type}: {coupon.discount_value}</p>
+                    {coupon.valid_product_ids?.length > 0 && <p className="text-[10px] text-stone truncate max-w-[200px] mt-1">Valid on: {coupon.valid_product_ids.join(', ')}</p>}
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <button onClick={() => setCouponForm({...coupon, valid_product_ids: coupon.valid_product_ids ? coupon.valid_product_ids.join(', ') : ''})} className="text-xs font-semibold text-onyx hover:underline">Edit</button>
+                    <button onClick={() => handleDeleteCoupon(coupon.id)} className="text-xs font-semibold text-rose hover:underline">Delete</button>
+                  </div>
+                </div>
+              ))}
+              {coupons.length === 0 && <p className="text-sm text-stone italic">No coupons found.</p>}
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };

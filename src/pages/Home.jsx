@@ -10,6 +10,7 @@ import SearchBar from "../components/common/SearchBar.jsx";
 import ProductGrid from "../components/product/ProductGrid.jsx";
 import useVisitorTracking from "../hooks/useVisitorTracking.js";
 import { buildProductSlug } from "../utils/slug.js";
+import { fetchSlides } from "../services/contentService.js";
 import heroVideo from "./hero-video.mp4";
 import posterImg from "./poster.png";
 
@@ -31,6 +32,8 @@ const Home = () => {
   const navigate = useNavigate();
 
   const [showPoster, setShowPoster] = useState(false);
+  const [slides, setSlides] = useState([]);
+  const [currentSlide, setCurrentSlide] = useState(0);
 
   useEffect(() => {
     if (!hasShownPosterThisLoad) {
@@ -41,6 +44,20 @@ const Home = () => {
       return () => clearTimeout(timer);
     }
   }, []);
+
+  useEffect(() => {
+    fetchSlides().then(data => {
+      if (data && data.length > 0) setSlides(data.slice(0, 4));
+    });
+  }, []);
+
+  useEffect(() => {
+    if (slides.length <= 1) return;
+    const interval = setInterval(() => {
+      setCurrentSlide(prev => (prev + 1) % slides.length);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [slides]);
 
   const suggestions = useMemo(() => {
     if (!debouncedQuery) return [];
@@ -75,6 +92,33 @@ const Home = () => {
 
   return (
     <div className="mx-auto max-w-6xl space-y-12 px-4 py-8">
+      {slides.length > 0 && (
+        <section className="relative h-[40vh] min-h-[300px] w-full overflow-hidden rounded-[32px] shadow-soft sm:h-[60vh] bg-stone/5">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={currentSlide}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.8 }}
+              className="absolute inset-0 h-full w-full cursor-pointer"
+              onClick={() => {
+                if (slides[currentSlide].link_url) {
+                  navigate(slides[currentSlide].link_url);
+                }
+              }}
+            >
+              <img src={slides[currentSlide].image_url} alt="Promo Slide" className="h-full w-full object-cover" />
+            </motion.div>
+          </AnimatePresence>
+          <div className="absolute bottom-4 left-1/2 flex -translate-x-1/2 gap-2">
+            {slides.map((_, i) => (
+              <button key={i} onClick={() => setCurrentSlide(i)} className={`h-2.5 w-2.5 rounded-full transition-all shadow-md ${i === currentSlide ? "bg-white w-6" : "bg-white/50 hover:bg-white/80"}`} aria-label={`Go to slide ${i+1}`} />
+            ))}
+          </div>
+        </section>
+      )}
+
       <section className="relative h-[60vh] min-h-[400px] w-full overflow-hidden rounded-[32px] shadow-soft sm:h-[80vh]">
         <video
           autoPlay
