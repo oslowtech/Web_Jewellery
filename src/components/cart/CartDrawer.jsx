@@ -4,47 +4,18 @@ import { useCart } from "../../context/CartContext.jsx";
 import CartItem from "./CartItem.jsx";
 import EmptyState from "../common/EmptyState.jsx";
 import { formatPrice } from "../../utils/format.js";
-import {
-  calculateShipping,
-  getShippingInfo,
-  validatePincode,
-} from "../../utils/shipping.js";
 import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { useAuth } from "../../context/AuthContext.jsx";
 import { useCheckout } from "../../context/CheckoutContext.jsx";
 
 const CartDrawer = () => {
-  const { isOpen, closeCart, cart, removeItem, updateItem, total, finalTotal, discountAmount, coupon, applyCoupon, removeCoupon, pincode, setPincode } = useCart();
+  const { isOpen, closeCart, cart, removeItem, updateItem, total, finalTotal, discountAmount, coupon, applyCoupon, removeCoupon } = useCart();
   const { user } = useAuth();
   const { actions: checkoutActions } = useCheckout();
   const navigate = useNavigate();
-  const [pincodeInput, setPincodeInput] = useState(pincode);
-  const [pincodeError, setPincodeError] = useState("");
   const [couponInput, setCouponInput] = useState("");
   const [couponError, setCouponError] = useState("");
-
-  const handlePincodeChange = (e) => {
-    const value = e.target.value;
-    setPincodeInput(value);
-    setPincodeError("");
-  };
-
-  const handlePincodeSubmit = () => {
-    if (!validatePincode(pincodeInput)) {
-      setPincodeError("Please enter a valid 6-digit pincode");
-      return;
-    }
-
-    const shippingInfo = getShippingInfo(pincodeInput);
-    if (!shippingInfo.valid) {
-      setPincodeError(shippingInfo.message);
-      return;
-    }
-
-    setPincode(pincodeInput);
-    setPincodeError("");
-  };
 
   const handleApplyCoupon = async () => {
     if (!couponInput) return;
@@ -57,10 +28,7 @@ const CartDrawer = () => {
     }
   };
 
-  const shippingInfo = pincode ? getShippingInfo(pincode) : null;
-  const baseShipping = pincode ? calculateShipping(pincode, total) : null;
   const freeShippingThreshold = 1500;
-  const shipping = finalTotal >= freeShippingThreshold ? 0 : baseShipping;
   const codAvailable = total <= 1000;
   const OFFER_THRESHOLD = 3000;
   const offerEligible = finalTotal >= OFFER_THRESHOLD;
@@ -125,36 +93,6 @@ const CartDrawer = () => {
               </div>
               {cart.length > 0 && (
                 <div className="space-y-4 border-t border-white/70 px-5 py-4">
-                  <div className="space-y-2 rounded-2xl bg-white/70 p-3">
-                    <label className="block text-xs font-medium">Shipping Pincode</label>
-                    <input
-                      type="text"
-                      value={pincodeInput}
-                      onChange={handlePincodeChange}
-                      placeholder="Enter 6-digit pincode"
-                      maxLength="6"
-                      className={`w-full rounded-lg border px-3 py-2 text-sm outline-none ${
-                        pincodeError
-                          ? "border-rose bg-rose/10"
-                          : "border-white/70 bg-white"
-                      }`}
-                    />
-                    {pincodeError ? (
-                      <p className="text-xs text-rose">{pincodeError}</p>
-                    ) : null}
-                    <button
-                      type="button"
-                      onClick={handlePincodeSubmit}
-                      className="mt-2 w-full rounded-lg bg-onyx/10 px-3 py-2 text-xs font-medium text-onyx"
-                    >
-                      Calculate shipping
-                    </button>
-                    {pincode && !pincodeError ? (
-                      <p className="text-xs text-stone">
-                        ✓ Shipping calculated for {pincode}
-                      </p>
-                    ) : null}
-                  </div>
 
                   <div className="space-y-2 rounded-2xl bg-white/70 p-3">
                     <label className="block text-xs font-medium">Coupon Code</label>
@@ -191,42 +129,21 @@ const CartDrawer = () => {
                       <span>Subtotal</span>
                       <span className="font-medium">{formatPrice(total)}</span>
                     </div>
-                    {pincode && !pincodeError ? (
-                      <>
-                        <div className="flex items-center justify-between">
-                          <span>
-                            Shipping
-                            {shippingInfo?.zone ? (
-                              <span className="ml-1 text-xs text-stone">
-                                ({shippingInfo.zone === "near" ? "Near" : "Far"})
-                              </span>
-                            ) : null}
-                          </span>
-                            <span className={`font-medium ${finalTotal >= freeShippingThreshold ? 'text-green-600' : ''}`}>
-                              {finalTotal >= freeShippingThreshold ? "FREE" : formatPrice(shipping ?? 0)}
-                          </span>
-                        </div>
-                          {finalTotal < freeShippingThreshold && shipping !== null && (
-                          <p className="text-right text-xs text-green-600">
-                              Add {formatPrice(freeShippingThreshold - finalTotal)} more for FREE shipping!
-                          </p>
-                        )}
-                          {discountAmount > 0 && (
-                            <div className="flex items-center justify-between text-green-600">
-                              <span>Discount ({coupon?.code})</span>
-                              <span className="font-medium">-{formatPrice(discountAmount)}</span>
-                            </div>
-                          )}
-                        <div className="border-t border-white/70 pt-2 flex items-center justify-between font-semibold">
-                          <span>Total</span>
-                            <span>{formatPrice(finalTotal + (shipping ?? 0))}</span>
-                        </div>
-                      </>
-                    ) : (
-                      <p className="text-xs text-stone italic">
-                        Enter pincode to calculate shipping
+                    {finalTotal < freeShippingThreshold && (
+                      <p className="text-right text-xs font-medium text-green-600">
+                        Add {formatPrice(freeShippingThreshold - finalTotal)} more for FREE shipping!
                       </p>
                     )}
+                    {discountAmount > 0 && (
+                      <div className="flex items-center justify-between text-green-600">
+                        <span>Discount ({coupon?.code})</span>
+                        <span className="font-medium">-{formatPrice(discountAmount)}</span>
+                      </div>
+                    )}
+                    <div className="border-t border-white/70 pt-2 flex items-center justify-between font-semibold">
+                      <span>Total</span>
+                      <span>{formatPrice(finalTotal)}</span>
+                    </div>
                   </div>
 
                   <div className="rounded-2xl bg-white/70 p-3 text-xs text-stone">
