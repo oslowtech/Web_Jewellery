@@ -86,8 +86,8 @@ const Home = () => {
   const featured = sortProducts(products.filter((product) => product.featured)).slice(0, 4);
   const newArrivals = sortProducts(products.filter((product) => product.isNew)).slice(0, 4);
   const bestSellers = sortProducts(products.filter((product) => product.bestSeller)).slice(0, 4);
-  const womensProducts = sortProducts(products.filter((product) => product.gender === "women" || product.gender === "both" || product.gender === "unisex")).slice(0, 4);
-  const mensProducts = sortProducts(products.filter((product) => product.gender === "men" || product.gender === "both" || product.gender === "unisex")).slice(0, 4);
+  const womensProducts = sortProducts(products.filter((product) => product.gender === "women" || product.gender === "both" || product.gender === "unisex" || product.gender === "couple")).slice(0, 4);
+  const mensProducts = sortProducts(products.filter((product) => product.gender === "men" || product.gender === "both" || product.gender === "unisex" || product.gender === "couple")).slice(0, 4);
   const categories = [...new Set(products.map((product) => product.category))];
 
   return (

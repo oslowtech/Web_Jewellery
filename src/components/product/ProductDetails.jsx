@@ -29,11 +29,13 @@ const ProductDetails = ({ product }) => {
   // Convert comma-separated string from Admin into an array of sizes
   const ringSizes = product.ringSize ? product.ringSize.split(',').map(s => s.trim()).filter(Boolean) : [];
 
+  const isCoupleProduct = Boolean(product.isCouple || product.gender === "couple");
+
   const cartItem = {
-      id: product.isCouple && selectedSize && selectedSize2 
+      id: isCoupleProduct && selectedSize && selectedSize2 
             ? `${product.id}-${selectedSize}-${selectedSize2}` 
             : selectedSize ? `${product.id}-${selectedSize}` : product.id,
-      name: product.isCouple && selectedSize && selectedSize2 
+      name: isCoupleProduct && selectedSize && selectedSize2 
             ? `${product.name} (Sizes: ${selectedSize}, ${selectedSize2})` 
             : selectedSize ? `${product.name} (Size: ${selectedSize})` : product.name,
       price: product.price,
@@ -47,10 +49,10 @@ const ProductDetails = ({ product }) => {
 
   const validateSelection = () => {
     if (ringSizes.length > 0 && !selectedSize) {
-      setSizeError(product.isCouple ? "Please select a size for Ring 1" : "Please select a size first");
+      setSizeError(isCoupleProduct ? "Please select a size for Ring 1" : "Please select a size first");
       return false;
     }
-    if (product.isCouple && ringSizes.length > 0 && !selectedSize2) {
+    if (isCoupleProduct && ringSizes.length > 0 && !selectedSize2) {
       setSizeError("Please select a size for Ring 2");
       return false;
     }
@@ -98,7 +100,7 @@ const ProductDetails = ({ product }) => {
       {ringSizes.length > 0 && (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <p className="text-sm font-medium text-onyx">{product.isCouple ? "Select Size (Ring 1)" : "Select Size"}</p>
+            <p className="text-sm font-medium text-onyx">{isCoupleProduct ? "Select Size (Ring 1)" : "Select Size"}</p>
             {sizeError && <p className="text-xs font-medium text-rose">{sizeError}</p>}
           </div>
           <div className="flex flex-wrap gap-2">
@@ -122,7 +124,7 @@ const ProductDetails = ({ product }) => {
         </div>
       )}
 
-      {product.isCouple && ringSizes.length > 0 && (
+      {isCoupleProduct && ringSizes.length > 0 && (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <p className="text-sm font-medium text-onyx">Select Size (Ring 2)</p>

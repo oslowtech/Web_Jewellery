@@ -509,6 +509,7 @@ const Admin = () => {
                 <option value="women">Women</option>
                 <option value="men">Men</option>
                 <option value="both">Both (Women & Men)</option>
+                <option value="couple">Couple</option>
               </select>
             </label>
             <label className="space-y-1 text-sm">
