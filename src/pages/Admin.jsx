@@ -19,6 +19,7 @@ const createEmptyForm = () => ({
   gender: "women",
   description: "",
   material: "Alloy",
+  ringSize: "",
   imageUrl1: "",
   imageUrl2: "",
   imageUrl3: "",
@@ -204,6 +205,7 @@ const Admin = () => {
         gender: form.gender,
         description: (form.description || "").trim(),
         material: (form.material || "").trim(),
+        ringSize: (form.ringSize || "").trim(),
         imageUrls: [
           form.imageUrl1,
           form.imageUrl2,
@@ -260,6 +262,7 @@ const Admin = () => {
       gender: product.gender || "women",
       description: product.description || "",
       material: product.material || "Alloy",
+      ringSize: product.ringSize ?? product.ring_size ?? "",
       imageUrl1: product.imageUrls?.[0] || product.images?.[0] || "",
       imageUrl2: product.imageUrls?.[1] || product.images?.[1] || "",
       imageUrl3: product.imageUrls?.[2] || product.images?.[2] || "",
@@ -295,6 +298,7 @@ const Admin = () => {
         gender: product.gender || "women",
         description: (product.description || "").trim(),
         material: (product.material || "Alloy").trim(),
+        ringSize: (product.ringSize ?? product.ring_size ?? "").trim(),
         imageUrls: [
           product.imageUrls?.[0] || product.images?.[0] || "",
           product.imageUrls?.[1] || product.images?.[1] || "",
@@ -421,6 +425,10 @@ const Admin = () => {
             <label className="space-y-1 text-sm">
               <span>Material</span>
               <input name="material" value={form.material} onChange={handleChange} className="w-full rounded-xl border border-white/70 bg-white px-3 py-2" />
+            </label>
+            <label className="space-y-1 text-sm">
+              <span>Ring Size (Optional)</span>
+              <input name="ringSize" value={form.ringSize} onChange={handleChange} className="w-full rounded-xl border border-white/70 bg-white px-3 py-2" placeholder="e.g., Adjustable, 12, 14, 16" />
             </label>
             <label className="space-y-1 text-sm">
               <span>Stock Quantity</span>
