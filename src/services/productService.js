@@ -28,6 +28,7 @@ const normalizeProduct = (product) => {
     featured: Boolean(product.featured),
     isNew: Boolean(product.isNew ?? product.is_new),
     bestSeller: Boolean(product.bestSeller ?? product.best_seller),
+    isCouple: Boolean(product.isCouple ?? product.is_couple),
     tags: Array.isArray(product.tags) ? product.tags : [],
     imageFiles,
     imageUrls,
@@ -94,6 +95,7 @@ export const saveProduct = async (product) => {
     featured: product.featured,
     is_new: product.isNew,
     best_seller: product.bestSeller,
+    is_couple: product.isCouple,
     tags: product.tags,
     image_files: product.imageFiles,
     image_urls: Array.isArray(product.imageUrls) 

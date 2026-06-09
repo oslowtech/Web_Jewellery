@@ -12,6 +12,7 @@ const ProductDetails = ({ product }) => {
   const { toggle, isWished } = useWishlist();
 
   const [selectedSize, setSelectedSize] = useState("");
+  const [selectedSize2, setSelectedSize2] = useState("");
   const [sizeError, setSizeError] = useState("");
 
   const stockAvailable = product.stockQuantity ?? product.stock_quantity ?? 0;
@@ -29,32 +30,42 @@ const ProductDetails = ({ product }) => {
   const ringSizes = product.ringSize ? product.ringSize.split(',').map(s => s.trim()).filter(Boolean) : [];
 
   const cartItem = {
-      id: selectedSize ? `${product.id}-${selectedSize}` : product.id,
-      name: selectedSize ? `${product.name} (Size: ${selectedSize})` : product.name,
+      id: product.isCouple && selectedSize && selectedSize2 
+            ? `${product.id}-${selectedSize}-${selectedSize2}` 
+            : selectedSize ? `${product.id}-${selectedSize}` : product.id,
+      name: product.isCouple && selectedSize && selectedSize2 
+            ? `${product.name} (Sizes: ${selectedSize}, ${selectedSize2})` 
+            : selectedSize ? `${product.name} (Size: ${selectedSize})` : product.name,
       price: product.price,
       discountPrice: product.discountPrice,
       image: product.images[0],
       category: product.category,
       stockQuantity: stockAvailable,
       ringSize: selectedSize || undefined,
+      ringSize2: selectedSize2 || undefined,
+  };
+
+  const validateSelection = () => {
+    if (ringSizes.length > 0 && !selectedSize) {
+      setSizeError(product.isCouple ? "Please select a size for Ring 1" : "Please select a size first");
+      return false;
+    }
+    if (product.isCouple && ringSizes.length > 0 && !selectedSize2) {
+      setSizeError("Please select a size for Ring 2");
+      return false;
+    }
+    setSizeError("");
+    return true;
   };
 
   const handleAdd = () => {
-    if (ringSizes.length > 0 && !selectedSize) {
-      setSizeError("Please select a size first");
-      return;
-    }
-    setSizeError("");
+    if (!validateSelection()) return;
     addItem(cartItem);
     openCart();
   };
 
   const handleBuyNow = () => {
-    if (ringSizes.length > 0 && !selectedSize) {
-      setSizeError("Please select a size first");
-      return;
-    }
-    setSizeError("");
+    if (!validateSelection()) return;
     addItem(cartItem);
     navigate("/checkout");
   };
@@ -87,7 +98,7 @@ const ProductDetails = ({ product }) => {
       {ringSizes.length > 0 && (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <p className="text-sm font-medium text-onyx">Select Size</p>
+            <p className="text-sm font-medium text-onyx">{product.isCouple ? "Select Size (Ring 1)" : "Select Size"}</p>
             {sizeError && <p className="text-xs font-medium text-rose">{sizeError}</p>}
           </div>
           <div className="flex flex-wrap gap-2">
@@ -100,6 +111,32 @@ const ProductDetails = ({ product }) => {
                 }}
                 className={`rounded-xl border px-4 py-2 text-sm font-medium transition-all ${
                   selectedSize === size
+                    ? "border-onyx bg-onyx text-white shadow-md"
+                    : "border-stone/30 bg-white text-onyx hover:border-onyx/50 hover:bg-stone/5"
+                }`}
+              >
+                {size}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {product.isCouple && ringSizes.length > 0 && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-medium text-onyx">Select Size (Ring 2)</p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {ringSizes.map(size => (
+              <button
+                key={`${size}-2`}
+                onClick={() => {
+                  setSelectedSize2(size);
+                  setSizeError("");
+                }}
+                className={`rounded-xl border px-4 py-2 text-sm font-medium transition-all ${
+                  selectedSize2 === size
                     ? "border-onyx bg-onyx text-white shadow-md"
                     : "border-stone/30 bg-white text-onyx hover:border-onyx/50 hover:bg-stone/5"
                 }`}

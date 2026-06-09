@@ -83,6 +83,14 @@ const QuickViewModal = ({ product, onClose }) => {
               >
                 Out of stock
               </button>
+            ) : product.ringSize ? (
+              <Link
+                to={`/product/${buildProductSlug(product)}`}
+                className="flex flex-1 items-center justify-center rounded-full bg-onyx px-4 py-2 text-sm text-white"
+                onClick={onClose}
+              >
+                Select Size
+              </Link>
             ) : (
               <button
                 type="button"

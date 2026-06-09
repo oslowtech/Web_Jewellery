@@ -33,6 +33,7 @@ const createEmptyForm = () => ({
   featured: false,
   isNew: false,
   bestSeller: false,
+  isCouple: false,
 });
 
 const PRODUCTS_CACHE_KEY = "products_cache";
@@ -246,6 +247,7 @@ const Admin = () => {
         featured: Boolean(form.featured),
         isNew: Boolean(form.isNew),
         bestSeller: Boolean(form.bestSeller),
+        isCouple: Boolean(form.isCouple),
       };
 
       await saveProduct(payload);
@@ -294,6 +296,7 @@ const Admin = () => {
       featured: product.featured || false,
       isNew: product.isNew || false,
       bestSeller: product.bestSeller || false,
+      isCouple: product.isCouple || false,
     });
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -333,6 +336,7 @@ const Admin = () => {
         featured: Boolean(product.featured),
         isNew: Boolean(product.isNew ?? product.is_new),
         bestSeller: Boolean(product.bestSeller ?? product.best_seller),
+        isCouple: Boolean(product.isCouple ?? product.is_couple),
       };
       await saveProduct(payload);
       clearProductsCache();
@@ -565,6 +569,7 @@ const Admin = () => {
               ["featured", "Featured"],
               ["isNew", "New arrival"],
               ["bestSeller", "Best seller"],
+              ["isCouple", "Couple product"],
             ].map(([field, label]) => (
               <label key={field} className="flex items-center gap-2 rounded-full border border-white/70 bg-white px-3 py-2">
                 <input type="checkbox" name={field} checked={form[field]} onChange={handleChange} />

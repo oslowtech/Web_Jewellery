@@ -1,6 +1,6 @@
 import { Heart } from "lucide-react";
 import { motion } from "framer-motion";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useCart } from "../../context/CartContext.jsx";
 import { useWishlist } from "../../context/WishlistContext.jsx";
 import { formatPrice } from "../../utils/format.js";
@@ -9,6 +9,7 @@ import { buildProductSlug } from "../../utils/slug.js";
 const ProductCard = ({ product, onQuickView }) => {
   const { addItem, openCart, cart } = useCart();
   const { toggle, isWished } = useWishlist();
+  const navigate = useNavigate();
   const wished = isWished(product.id);
   const slug = buildProductSlug(product);
 
@@ -96,9 +97,9 @@ const ProductCard = ({ product, onQuickView }) => {
           <button
             type="button"
             className="flex-1 rounded-full bg-onyx px-3 py-2 text-xs text-white"
-            onClick={handleAdd}
+            onClick={product.ringSize ? () => navigate(`/product/${slug}`) : handleAdd}
           >
-            Add to Cart
+            {product.ringSize ? "Select Size" : "Add to Cart"}
           </button>
         )}
       </div>
