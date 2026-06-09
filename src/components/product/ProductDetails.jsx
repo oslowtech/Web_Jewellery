@@ -28,6 +28,7 @@ const ProductDetails = ({ product }) => {
 
   // Convert comma-separated string from Admin into an array of sizes
   const ringSizes = product.ringSize ? product.ringSize.split(',').map(s => s.trim()).filter(Boolean) : [];
+  const ringSizes2 = product.ringSize2 ? product.ringSize2.split(',').map(s => s.trim()).filter(Boolean) : ringSizes;
 
   const isCoupleProduct = Boolean(product.isCouple || product.gender === "couple");
 
@@ -52,7 +53,7 @@ const ProductDetails = ({ product }) => {
       setSizeError(isCoupleProduct ? "Please select a size for Ring 1" : "Please select a size first");
       return false;
     }
-    if (isCoupleProduct && ringSizes.length > 0 && !selectedSize2) {
+    if (isCoupleProduct && ringSizes2.length > 0 && !selectedSize2) {
       setSizeError("Please select a size for Ring 2");
       return false;
     }
@@ -124,13 +125,13 @@ const ProductDetails = ({ product }) => {
         </div>
       )}
 
-      {isCoupleProduct && ringSizes.length > 0 && (
+      {isCoupleProduct && ringSizes2.length > 0 && (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <p className="text-sm font-medium text-onyx">Select Size (Ring 2)</p>
           </div>
           <div className="flex flex-wrap gap-2">
-            {ringSizes.map(size => (
+            {ringSizes2.map(size => (
               <button
                 key={`${size}-2`}
                 onClick={() => {

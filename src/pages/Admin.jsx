@@ -21,6 +21,7 @@ const createEmptyForm = () => ({
   description: "",
   material: "Alloy",
   ringSize: "",
+  ringSize2: "",
   imageUrl1: "",
   imageUrl2: "",
   imageUrl3: "",
@@ -226,6 +227,7 @@ const Admin = () => {
         description: (form.description || "").trim(),
         material: (form.material || "").trim(),
         ringSize: (form.ringSize || "").trim(),
+        ringSize2: (form.ringSize2 || "").trim(),
         imageUrls: [
           form.imageUrl1,
           form.imageUrl2,
@@ -284,6 +286,7 @@ const Admin = () => {
       description: product.description || "",
       material: product.material || "Alloy",
       ringSize: product.ringSize ?? product.ring_size ?? "",
+      ringSize2: product.ringSize2 ?? product.ring_size2 ?? "",
       imageUrl1: product.imageUrls?.[0] || product.images?.[0] || "",
       imageUrl2: product.imageUrls?.[1] || product.images?.[1] || "",
       imageUrl3: product.imageUrls?.[2] || product.images?.[2] || "",
@@ -321,6 +324,7 @@ const Admin = () => {
         description: (product.description || "").trim(),
         material: (product.material || "Alloy").trim(),
         ringSize: (product.ringSize ?? product.ring_size ?? "").trim(),
+        ringSize2: (product.ringSize2 ?? product.ring_size2 ?? "").trim(),
         imageUrls: [
           product.imageUrls?.[0] || product.images?.[0] || "",
           product.imageUrls?.[1] || product.images?.[1] || "",
@@ -520,6 +524,12 @@ const Admin = () => {
               <span>Ring Size (Optional)</span>
               <input name="ringSize" value={form.ringSize} onChange={handleChange} className="w-full rounded-xl border border-white/70 bg-white px-3 py-2" placeholder="e.g., Adjustable, 12, 14, 16" />
             </label>
+            {(form.isCouple || form.gender === "couple") && (
+              <label className="space-y-1 text-sm">
+                <span>Ring Size 2 (Optional)</span>
+                <input name="ringSize2" value={form.ringSize2} onChange={handleChange} className="w-full rounded-xl border border-white/70 bg-white px-3 py-2" placeholder="e.g., Adjustable, 12, 14, 16" />
+              </label>
+            )}
             <label className="space-y-1 text-sm">
               <span>Stock Quantity</span>
               <input name="stockQuantity" type="number" min="0" value={form.stockQuantity} onChange={handleChange} required className="w-full rounded-xl border border-white/70 bg-white px-3 py-2" />
