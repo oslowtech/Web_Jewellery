@@ -6,6 +6,7 @@ import WhatsAppButton from "./components/common/WhatsAppButton.jsx";
 import CartDrawer from "./components/cart/CartDrawer.jsx";
 import ToastHost from "./components/common/ToastHost.jsx";
 import AppRoutes from "./routes/AppRoutes.jsx";
+import { Analytics } from "@vercel/analytics/react";
 
 const ScrollToTop = () => {
   const { pathname } = useLocation();
@@ -27,6 +28,7 @@ const App = () => {
       <WhatsAppButton />
       <CartDrawer />
       <ToastHost />
+      <Analytics />
     </div>
   );
 };
