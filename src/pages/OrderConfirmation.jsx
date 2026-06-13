@@ -3,7 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { CheckCircle2, Package, ReceiptText } from 'lucide-react';
 import { getOrderById } from '../services/orderService.js';
 import { formatPrice } from '../utils/format.js';
-import { getLuckyDrawEntryByOrder } from '../services/luckyDrawService.js';
+import { getLuckyDrawEntryByOrder, verifyAndUseCode } from '../services/luckyDrawService.js';
 import PageLoader from '../components/common/PageLoader.jsx';
 
 const OrderConfirmation = () => {
@@ -12,6 +12,7 @@ const OrderConfirmation = () => {
   const [luckyDraw, setLuckyDraw] = useState(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
+  const [redeeming, setRedeeming] = useState(false);
 
   useEffect(() => {
     const loadOrder = async () => {
@@ -33,6 +34,19 @@ const OrderConfirmation = () => {
 
     if (orderId) loadOrder();
   }, [orderId]);
+
+  const handleRedeem = async () => {
+    if (!window.confirm("Are you sure you want to redeem this code now?")) return;
+    setRedeeming(true);
+    try {
+      const updated = await verifyAndUseCode(luckyDraw.code);
+      setLuckyDraw(updated);
+    } catch (err) {
+      alert(err.message || "Failed to redeem code.");
+    } finally {
+      setRedeeming(false);
+    }
+  };
 
   if (loading) return <PageLoader />;
 
@@ -112,11 +126,20 @@ const OrderConfirmation = () => {
         {luckyDraw && (
           <div className="mt-6 rounded-lg bg-rose/5 border border-rose/20 p-6 text-center">
             <h3 className="font-display text-xl text-rose mb-2">🎉 You won a Lucky Draw Entry!</h3>
-            <p className="text-sm text-stone mb-4">Show this QR code at the store to claim your prize.</p>
-            <img src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${luckyDraw.code}`} alt="Lucky Draw QR" className="w-32 h-32 mx-auto rounded-xl mb-3 p-2 bg-white shadow-sm" />
+            <p className="text-sm text-stone mb-4">Show this QR code at the store or click Redeem to claim your prize.</p>
+            <img src={`https://quickchart.io/qr?text=${luckyDraw.code}&size=200&margin=2`} alt="Lucky Draw QR" className="w-32 h-32 mx-auto rounded-xl mb-3 p-2 bg-white shadow-sm" />
             <p className="font-bold tracking-widest text-lg text-onyx">{luckyDraw.code}</p>
             <p className="text-xs text-stone mt-1">Or access it anytime from your <Link to="/lucky-draw" className="underline font-medium text-rose">Lucky Draw</Link> page.</p>
             {luckyDraw.is_used && <p className="mt-2 text-sm font-bold text-rose">Redeemed</p>}
+            {!luckyDraw.is_used && (
+              <button 
+                onClick={handleRedeem}
+                disabled={redeeming}
+                className="mt-4 rounded-full bg-onyx px-6 py-2 text-sm font-bold text-white uppercase tracking-wider disabled:opacity-50"
+              >
+                {redeeming ? "REDEEMING..." : "REDEEM NOW"}
+              </button>
+            )}
           </div>
         )}
 

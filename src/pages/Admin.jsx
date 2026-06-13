@@ -907,10 +907,10 @@ const Admin = () => {
               {generatedQR && (
                 <div className="mt-4 p-4 border border-rose/30 bg-rose/5 rounded-2xl text-center">
                   <p className="font-bold text-lg mb-2">{generatedQR.code}</p>
-                  <img src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${generatedQR.code}`} alt="QR Code" className="w-32 h-32 mx-auto rounded-xl mb-3 p-2 bg-white shadow-sm" crossOrigin="anonymous" />
+                  <img src={`https://quickchart.io/qr?text=${generatedQR.code}&size=200&margin=2`} alt="QR Code" className="w-32 h-32 mx-auto rounded-xl mb-3 p-2 bg-white shadow-sm" crossOrigin="anonymous" />
                   <button onClick={async () => {
                     try {
-                      const response = await fetch(`https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${generatedQR.code}`);
+                      const response = await fetch(`https://quickchart.io/qr?text=${generatedQR.code}&size=400&margin=2`);
                       const blob = await response.blob();
                       const url = window.URL.createObjectURL(blob);
                       const a = document.createElement('a');
@@ -921,7 +921,7 @@ const Admin = () => {
                       document.body.removeChild(a);
                       window.URL.revokeObjectURL(url);
                     } catch(e) {
-                      window.open(`https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${generatedQR.code}`, '_blank');
+                      window.open(`https://quickchart.io/qr?text=${generatedQR.code}&size=400&margin=2`, '_blank');
                     }
                   }} className="text-sm bg-white border border-stone/20 px-4 py-2 rounded-full hover:bg-stone/5 transition-colors">Download QR</button>
                 </div>
