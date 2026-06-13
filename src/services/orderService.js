@@ -148,9 +148,10 @@ export async function createOrder(orderData) {
 
     // Update inventory stock
     for (const item of sanitizedItems) {
+      const baseProductId = item.productId.split('-')[0];
       const { error: stockError } = await supabase.rpc('decrement_stock', {
-        product_id: item.productId,
-        quantity_to_deduct: item.quantity
+        p_product_id: baseProductId,
+        p_quantity: item.quantity
       });
       if (stockError) console.error(`Failed to deduct stock for product ${item.productId}:`, stockError);
     }
@@ -345,9 +346,10 @@ export async function updateOrderStatus(orderId, newStatus, notes = '') {
     if (newStatus === 'cancelled' && order.status !== 'cancelled') {
       if (order.order_items && order.order_items.length > 0) {
         for (const item of order.order_items) {
+          const baseProductId = item.product_id.split('-')[0];
           const { error: stockError } = await supabase.rpc('increment_stock', {
-            product_id: item.product_id,
-            quantity_to_add: item.quantity
+            p_product_id: baseProductId,
+            p_quantity: item.quantity
           });
           if (stockError) console.error(`Failed to restore stock for product ${item.product_id}:`, stockError);
         }
@@ -685,9 +687,10 @@ export async function updateOrderStatusAdmin(orderId, newStatus, trackingId = nu
     if (newStatus === 'cancelled' && existingOrder?.status !== 'cancelled') {
       if (existingOrder.order_items && existingOrder.order_items.length > 0) {
         for (const item of existingOrder.order_items) {
+          const baseProductId = item.product_id.split('-')[0];
           const { error: stockError } = await supabase.rpc('increment_stock', {
-            product_id: item.product_id,
-            quantity_to_add: item.quantity
+            p_product_id: baseProductId,
+            p_quantity: item.quantity
           });
           if (stockError) console.error(`Failed to restore stock for product ${item.product_id}:`, stockError);
         }
