@@ -1,4 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
 import { useCart } from "../context/CartContext.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
 import { useCheckout } from "../context/CheckoutContext.jsx";
@@ -6,6 +7,7 @@ import CartItem from "../components/cart/CartItem.jsx";
 import EmptyState from "../components/common/EmptyState.jsx";
 import { formatPrice } from "../utils/format.js";
 import usePageMeta from "../hooks/usePageMeta.js";
+import { checkUserEligibility } from "../services/luckyDrawService.js";
 
 const Cart = () => {
   usePageMeta({
@@ -17,6 +19,15 @@ const Cart = () => {
   const { user } = useAuth();
   const { cart, removeItem, updateItem, total, finalTotal, discountAmount, coupon } = useCart();
   const { actions: checkoutActions } = useCheckout();
+  const [isEligibleForDraw, setIsEligibleForDraw] = useState(true);
+
+  useEffect(() => {
+    if (user) {
+      checkUserEligibility(user.id).then(setIsEligibleForDraw);
+    } else {
+      setIsEligibleForDraw(true);
+    }
+  }, [user]);
 
   const OFFER_THRESHOLD = 3000;
   const progressPercentage = Math.min((finalTotal / OFFER_THRESHOLD) * 100, 100);
@@ -68,22 +79,24 @@ const Cart = () => {
             <span className="text-lg font-semibold">{formatPrice(finalTotal)}</span>
           </div>
           
-          <div className="bg-rose/10 p-4 rounded-2xl border border-rose/20 my-4">
-            <p className="text-sm font-medium text-onyx mb-2">Lucky Draw Offer!</p>
-            <div className="w-full bg-stone/20 rounded-full h-2.5">
-              <div 
-                className="bg-rose h-2.5 rounded-full transition-all duration-500" 
-                style={{ width: `${progressPercentage}%` }}
-              ></div>
+          {isEligibleForDraw && (
+            <div className="bg-rose/10 p-4 rounded-2xl border border-rose/20 my-4">
+              <p className="text-sm font-medium text-onyx mb-2">Lucky Draw Offer!</p>
+              <div className="w-full bg-stone/20 rounded-full h-2.5">
+                <div 
+                  className="bg-rose h-2.5 rounded-full transition-all duration-500" 
+                  style={{ width: `${progressPercentage}%` }}
+                ></div>
+              </div>
+              {progressPercentage < 100 ? (
+                <p className="text-xs text-stone mt-2">
+                  Add items worth <span className="font-bold text-rose">{formatPrice(amountLeft)}</span> more to qualify for the lucky draw!
+                </p>
+              ) : (
+                <p className="text-xs text-green-600 font-bold mt-2">🎉 Congratulations! You qualify for the Lucky Draw.</p>
+              )}
             </div>
-            {progressPercentage < 100 ? (
-              <p className="text-xs text-stone mt-2">
-                Add items worth <span className="font-bold text-rose">{formatPrice(amountLeft)}</span> more to qualify for the lucky draw!
-              </p>
-            ) : (
-              <p className="text-xs text-green-600 font-bold mt-2">🎉 Congratulations! You qualify for the Lucky Draw.</p>
-            )}
-          </div>
+          )}
 
           <button
             onClick={handleCheckout}

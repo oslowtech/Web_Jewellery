@@ -1,8 +1,10 @@
 import { Heart, ShoppingBag } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCart } from "../../context/CartContext.jsx";
 import { useWishlist } from "../../context/WishlistContext.jsx";
+import { useAuth } from "../../context/AuthContext.jsx";
+import { checkUserEligibility } from "../../services/luckyDrawService.js";
 import { formatPrice } from "../../utils/format.js";
 import { COD_LIMIT, DISPATCH_PINCODE, OFFER_THRESHOLD, SHIPPING_RATES } from "../../utils/shipping.js";
 
@@ -10,10 +12,20 @@ const ProductDetails = ({ product }) => {
   const navigate = useNavigate();
   const { addItem, openCart, cart } = useCart();
   const { toggle, isWished } = useWishlist();
+  const { user } = useAuth();
 
   const [selectedSize, setSelectedSize] = useState("");
   const [selectedSize2, setSelectedSize2] = useState("");
   const [sizeError, setSizeError] = useState("");
+  const [isEligibleForDraw, setIsEligibleForDraw] = useState(true);
+
+  useEffect(() => {
+    if (user) {
+      checkUserEligibility(user.id).then(setIsEligibleForDraw);
+    } else {
+      setIsEligibleForDraw(true);
+    }
+  }, [user]);
 
   const stockAvailable = product.stockQuantity ?? product.stock_quantity ?? 0;
   
@@ -201,8 +213,8 @@ const ProductDetails = ({ product }) => {
         )}
       </div>
       <div className="rounded-2xl border border-rose/40 bg-rose/10 p-4 text-xs text-stone">
-        Free shipping on orders over ₹1499 · COD
-        up to ₹1000 · Spend ₹{OFFER_THRESHOLD}+ for lucky draw entry
+        Free shipping on orders over ₹1499 · COD up to ₹1000
+        {isEligibleForDraw ? ` · Spend ₹${OFFER_THRESHOLD}+ for lucky draw entry` : ""}
       </div>
     </div>
   );

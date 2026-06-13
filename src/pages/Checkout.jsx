@@ -10,7 +10,7 @@ import { createOrder, validateOrderData } from '../services/orderService.js';
 import { PAYMENT_METHODS, finalizeManualOrder } from '../services/paymentService.js';
 import { calculateShipping } from '../utils/shipping.js';
 import { formatPrice } from '../utils/format.js';
-import { createLuckyDrawEntry } from '../services/luckyDrawService.js';
+import { createLuckyDrawEntry, checkUserEligibility } from '../services/luckyDrawService.js';
 import { Sparkles } from 'lucide-react';
 
 const Checkout = () => {
@@ -26,6 +26,13 @@ const Checkout = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [paymentMethod, setPaymentMethod] = useState(PAYMENT_METHODS.PREPAID);
+  const [isEligibleForDraw, setIsEligibleForDraw] = useState(true);
+
+  useEffect(() => {
+    if (user) {
+      checkUserEligibility(user.id).then(setIsEligibleForDraw);
+    }
+  }, [user]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -521,7 +528,7 @@ const Checkout = () => {
             <div className="bg-white p-6 rounded-lg border border-gray-200 sticky top-24">
               <h3 className="text-lg font-semibold mb-4">Order Total</h3>
               
-              {finalTotal >= 3000 && (
+              {finalTotal >= 3000 && isEligibleForDraw && (
                 <div className="mb-6 rounded-2xl border border-green-200 bg-green-50 p-4">
                   <p className="flex items-start gap-2 text-sm font-medium text-green-800">
                     <Sparkles size={16} className="mt-0.5 shrink-0" />

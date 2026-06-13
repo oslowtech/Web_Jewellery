@@ -3,6 +3,16 @@ import { supabase, isSupabaseConfigured } from "../lib/supabase.js";
 export const createLuckyDrawEntry = async (orderId, totalAmount, userId, customerName, customerPhone) => {
   if (!isSupabaseConfigured || !supabase || totalAmount < 3000) return null;
 
+  if (userId) {
+    const { data: existingUser } = await supabase.from('lucky_draw_entries').select('id').eq('user_id', userId).limit(1);
+    if (existingUser && existingUser.length > 0) return null;
+  }
+
+  if (customerPhone) {
+    const { data: existingPhone } = await supabase.from('lucky_draw_entries').select('id').eq('customer_phone', customerPhone).limit(1);
+    if (existingPhone && existingPhone.length > 0) return null;
+  }
+
   // Generate a unique 6-character code (e.g. LUCKY-A8X9P2)
   const code = `LUCKY-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
 
@@ -29,6 +39,13 @@ export const createLuckyDrawEntry = async (orderId, totalAmount, userId, custome
 export const createManualLuckyDrawEntry = async (customerName, customerPhone, amount) => {
   if (!isSupabaseConfigured || !supabase || amount < 3000) return null;
 
+  if (customerPhone) {
+    const { data: existingPhone } = await supabase.from('lucky_draw_entries').select('id').eq('customer_phone', customerPhone).limit(1);
+    if (existingPhone && existingPhone.length > 0) {
+      throw new Error("A customer with this phone number has already received a Lucky Draw entry.");
+    }
+  }
+
   const code = `LUCKY-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
 
   const { data, error } = await supabase
@@ -50,6 +67,13 @@ export const getLuckyDrawEntryByOrder = async (orderId) => {
   if (!isSupabaseConfigured || !supabase || !orderId) return null;
   const { data } = await supabase.from('lucky_draw_entries').select('*, orders(status)').eq('order_id', orderId).maybeSingle();
   return data;
+};
+
+export const checkUserEligibility = async (userId) => {
+  if (!isSupabaseConfigured || !supabase || !userId) return true;
+  const { data, error } = await supabase.from('lucky_draw_entries').select('id').eq('user_id', userId).limit(1);
+  if (error) return true; // Assume eligible on error to not block UI unnecessarily, backend will enforce
+  return !data || data.length === 0;
 };
 
 export const getUserLuckyDrawEntries = async (userId) => {

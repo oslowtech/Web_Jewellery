@@ -5,9 +5,10 @@ import CartItem from "./CartItem.jsx";
 import EmptyState from "../common/EmptyState.jsx";
 import { formatPrice } from "../../utils/format.js";
 import { Link, useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext.jsx";
 import { useCheckout } from "../../context/CheckoutContext.jsx";
+import { checkUserEligibility } from "../../services/luckyDrawService.js";
 
 const CartDrawer = () => {
   const { isOpen, closeCart, cart, removeItem, updateItem, total, finalTotal, discountAmount, coupon, applyCoupon, removeCoupon } = useCart();
@@ -16,6 +17,15 @@ const CartDrawer = () => {
   const navigate = useNavigate();
   const [couponInput, setCouponInput] = useState("");
   const [couponError, setCouponError] = useState("");
+  const [isEligibleForDraw, setIsEligibleForDraw] = useState(true);
+
+  useEffect(() => {
+    if (user) {
+      checkUserEligibility(user.id).then(setIsEligibleForDraw);
+    } else {
+      setIsEligibleForDraw(true);
+    }
+  }, [user]);
 
   const handleApplyCoupon = async () => {
     if (!couponInput) return;
@@ -152,25 +162,27 @@ const CartDrawer = () => {
                         ? `Cash on Delivery available up to ₹1000.`
                         : `Cash on Delivery not available above ₹1000.`}
                     </p>
-                    <div className="mt-3 rounded-xl border border-rose/20 bg-rose/10 p-3">
-                      <p className="mb-1 font-medium text-onyx">Lucky Draw Offer!</p>
-                      <p className="mb-2 text-xs text-stone">
-                        Spend ₹{OFFER_THRESHOLD}+ to get a chance to win Activa, iPhone, Smart TV, Iron, and more.
-                      </p>
-                      <div className="mb-2 h-2 w-full rounded-full bg-stone/20">
-                        <div
-                          className="h-2 rounded-full bg-rose transition-all duration-500"
-                          style={{ width: `${Math.min((finalTotal / OFFER_THRESHOLD) * 100, 100)}%` }}
-                        ></div>
-                      </div>
-                      {offerEligible ? (
-                        <p className="text-xs font-bold text-green-600">🎉 Congratulations! You qualify for the Lucky Draw.</p>
-                      ) : (
-                        <p className="text-xs text-stone">
-                          Add <span className="font-bold text-rose">{formatPrice(remainingForOffer)}</span> more to unlock the lucky draw entry!
+                    {isEligibleForDraw && (
+                      <div className="mt-3 rounded-xl border border-rose/20 bg-rose/10 p-3">
+                        <p className="mb-1 font-medium text-onyx">Lucky Draw Offer!</p>
+                        <p className="mb-2 text-xs text-stone">
+                          Spend ₹{OFFER_THRESHOLD}+ to get a chance to win Activa, iPhone, Smart TV, Iron, and more.
                         </p>
-                      )}
-                    </div>
+                        <div className="mb-2 h-2 w-full rounded-full bg-stone/20">
+                          <div
+                            className="h-2 rounded-full bg-rose transition-all duration-500"
+                            style={{ width: `${Math.min((finalTotal / OFFER_THRESHOLD) * 100, 100)}%` }}
+                          ></div>
+                        </div>
+                        {offerEligible ? (
+                          <p className="text-xs font-bold text-green-600">🎉 Congratulations! You qualify for the Lucky Draw.</p>
+                        ) : (
+                          <p className="text-xs text-stone">
+                            Add <span className="font-bold text-rose">{formatPrice(remainingForOffer)}</span> more to unlock the lucky draw entry!
+                          </p>
+                        )}
+                      </div>
+                    )}
                   </div>
                   <button
                     type="button"
