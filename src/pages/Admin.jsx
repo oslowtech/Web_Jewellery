@@ -9,7 +9,7 @@ import { formatPrice } from "../utils/format.js";
 import { removeStorage } from "../utils/storage.js";
 import { supabase, isSupabaseConfigured } from "../lib/supabase.js";
 import { fetchSlides, saveSlide, deleteSlide, fetchCoupons, saveCoupon, deleteCoupon } from "../services/contentService.js";
-import { getAllLuckyDrawEntries, verifyAndUseCode } from "../services/luckyDrawService.js";
+import { getAllLuckyDrawEntries, verifyAndUseCode, createManualLuckyDrawEntry } from "../services/luckyDrawService.js";
 
 const createEmptyForm = () => ({
   id: "",
@@ -77,6 +77,8 @@ const Admin = () => {
   
   const [luckyDraws, setLuckyDraws] = useState([]);
   const [verifyCode, setVerifyCode] = useState("");
+  const [manualDrawForm, setManualDrawForm] = useState({ name: "", phone: "", amount: "" });
+  const [generatedQR, setGeneratedQR] = useState(null);
 
   const categories = useMemo(() => {
     return [...new Set(products.map((p) => p.category))].filter(Boolean);
@@ -437,6 +439,22 @@ const Admin = () => {
         await deleteCoupon(id);
         loadSlidesAndCoupons();
       } catch (err) { setError(err.message); }
+    }
+  };
+
+  const handleGenerateOffline = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    setError("");
+    try {
+      const entry = await createManualLuckyDrawEntry(manualDrawForm.name, manualDrawForm.phone, Number(manualDrawForm.amount));
+      setGeneratedQR(entry);
+      setManualDrawForm({ name: "", phone: "", amount: "" });
+      loadLuckyDraws();
+    } catch (err) {
+      setError(err.message || "Failed to generate entry.");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -848,32 +866,66 @@ const Admin = () => {
 
       {activeTab === "lucky draw" && (
         <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-          <div className="space-y-4 rounded-3xl border border-white/70 bg-white/80 p-6 shadow-soft self-start">
-            <h2 className="font-display text-xl">Verify Lucky Draw Code</h2>
-            <p className="text-sm text-stone mb-2">Scan a customer's QR or type their code here to verify and redeem it.</p>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={verifyCode}
-                onChange={(e) => setVerifyCode(e.target.value.toUpperCase())}
-                placeholder="LUCKY-XXXXXX"
-                className="w-full rounded-xl border border-white/70 bg-white px-3 py-2 uppercase"
-              />
-              <button
-                onClick={async () => {
-                  setError(""); setSuccess(""); setSaving(true);
-                  try {
-                    const updated = await verifyAndUseCode(verifyCode);
-                    setSuccess(`Verified & Redeemed! Code ${updated.code} belonging to ${updated.customer_name} is valid.`);
-                    setVerifyCode("");
-                    loadLuckyDraws();
-                  } catch(err) { setError(err.message); } finally { setSaving(false); }
-                }}
-                disabled={saving || !verifyCode}
-                className="rounded-xl bg-onyx px-5 py-2 text-sm text-white disabled:opacity-50"
-              >
-                Redeem
-              </button>
+          <div className="space-y-6 self-start">
+            <div className="space-y-4 rounded-3xl border border-white/70 bg-white/80 p-6 shadow-soft">
+              <h2 className="font-display text-xl">Verify Lucky Draw Code</h2>
+              <p className="text-sm text-stone mb-2">Scan a customer's QR or type their code here to verify and redeem it.</p>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={verifyCode}
+                  onChange={(e) => setVerifyCode(e.target.value.toUpperCase())}
+                  placeholder="LUCKY-XXXXXX"
+                  className="w-full rounded-xl border border-white/70 bg-white px-3 py-2 uppercase"
+                />
+                <button
+                  onClick={async () => {
+                    setError(""); setSuccess(""); setSaving(true);
+                    try {
+                      const updated = await verifyAndUseCode(verifyCode);
+                      setSuccess(`Verified & Redeemed! Code ${updated.code} belonging to ${updated.customer_name} is valid.`);
+                      setVerifyCode("");
+                      loadLuckyDraws();
+                    } catch(err) { setError(err.message); } finally { setSaving(false); }
+                  }}
+                  disabled={saving || !verifyCode}
+                  className="rounded-xl bg-onyx px-5 py-2 text-sm text-white disabled:opacity-50"
+                >
+                  Redeem
+                </button>
+              </div>
+            </div>
+
+            <div className="space-y-4 rounded-3xl border border-white/70 bg-white/80 p-6 shadow-soft">
+              <h2 className="font-display text-xl">Generate Offline Entry</h2>
+              <form onSubmit={handleGenerateOffline} className="space-y-3">
+                <input type="text" placeholder="Customer Name" required value={manualDrawForm.name} onChange={e => setManualDrawForm({...manualDrawForm, name: e.target.value})} className="w-full rounded-xl border border-white/70 bg-white px-3 py-2" />
+                <input type="text" placeholder="Customer Phone" required value={manualDrawForm.phone} onChange={e => setManualDrawForm({...manualDrawForm, phone: e.target.value})} className="w-full rounded-xl border border-white/70 bg-white px-3 py-2" />
+                <input type="number" placeholder="Purchase Amount (Min ₹3000)" required min="3000" value={manualDrawForm.amount} onChange={e => setManualDrawForm({...manualDrawForm, amount: e.target.value})} className="w-full rounded-xl border border-white/70 bg-white px-3 py-2" />
+                <button type="submit" disabled={saving} className="w-full rounded-xl bg-onyx px-5 py-2 text-sm text-white disabled:opacity-50">Generate QR</button>
+              </form>
+              {generatedQR && (
+                <div className="mt-4 p-4 border border-rose/30 bg-rose/5 rounded-2xl text-center">
+                  <p className="font-bold text-lg mb-2">{generatedQR.code}</p>
+                  <img src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${generatedQR.code}`} alt="QR Code" className="w-32 h-32 mx-auto rounded-xl mb-3 p-2 bg-white shadow-sm" crossOrigin="anonymous" />
+                  <button onClick={async () => {
+                    try {
+                      const response = await fetch(`https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${generatedQR.code}`);
+                      const blob = await response.blob();
+                      const url = window.URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = url;
+                      a.download = `LuckyDraw-${generatedQR.code}.png`;
+                      document.body.appendChild(a);
+                      a.click();
+                      document.body.removeChild(a);
+                      window.URL.revokeObjectURL(url);
+                    } catch(e) {
+                      window.open(`https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${generatedQR.code}`, '_blank');
+                    }
+                  }} className="text-sm bg-white border border-stone/20 px-4 py-2 rounded-full hover:bg-stone/5 transition-colors">Download QR</button>
+                </div>
+              )}
             </div>
           </div>
           <div className="space-y-4 rounded-3xl border border-white/70 bg-white/80 p-6 shadow-soft">

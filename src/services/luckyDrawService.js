@@ -26,6 +26,32 @@ export const createLuckyDrawEntry = async (orderId, totalAmount, userId, custome
   return data;
 };
 
+export const createManualLuckyDrawEntry = async (customerName, customerPhone, amount) => {
+  if (!isSupabaseConfigured || !supabase || amount < 3000) return null;
+
+  const code = `LUCKY-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+
+  const { data, error } = await supabase
+    .from('lucky_draw_entries')
+    .insert([{
+      customer_name: customerName,
+      customer_phone: customerPhone,
+      code,
+      is_used: false
+    }])
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+};
+
+export const getLuckyDrawEntryByOrder = async (orderId) => {
+  if (!isSupabaseConfigured || !supabase || !orderId) return null;
+  const { data } = await supabase.from('lucky_draw_entries').select('*').eq('order_id', orderId).maybeSingle();
+  return data;
+};
+
 export const getUserLuckyDrawEntries = async (userId) => {
   if (!isSupabaseConfigured || !supabase || !userId) return [];
   const { data } = await supabase.from('lucky_draw_entries').select('*').eq('user_id', userId).order('created_at', { ascending: false });

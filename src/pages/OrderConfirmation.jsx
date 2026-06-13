@@ -3,11 +3,13 @@ import { Link, useParams } from 'react-router-dom';
 import { CheckCircle2, Package, ReceiptText } from 'lucide-react';
 import { getOrderById } from '../services/orderService.js';
 import { formatPrice } from '../utils/format.js';
+import { getLuckyDrawEntryByOrder } from '../services/luckyDrawService.js';
 import PageLoader from '../components/common/PageLoader.jsx';
 
 const OrderConfirmation = () => {
   const { orderId } = useParams();
   const [order, setOrder] = useState(null);
+  const [luckyDraw, setLuckyDraw] = useState(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
 
@@ -17,6 +19,11 @@ const OrderConfirmation = () => {
         setLoading(true);
         const data = await getOrderById(orderId);
         setOrder(data);
+        
+        if (data && data.total_amount >= 3000) {
+          const drawData = await getLuckyDrawEntryByOrder(orderId);
+          setLuckyDraw(drawData);
+        }
       } catch (err) {
         setError(err.message || 'Unable to load order details');
       } finally {
@@ -99,6 +106,17 @@ const OrderConfirmation = () => {
                 Track your shipment &rarr;
               </a>
             )}
+          </div>
+        )}
+
+        {luckyDraw && (
+          <div className="mt-6 rounded-lg bg-rose/5 border border-rose/20 p-6 text-center">
+            <h3 className="font-display text-xl text-rose mb-2">🎉 You won a Lucky Draw Entry!</h3>
+            <p className="text-sm text-stone mb-4">Show this QR code at the store to claim your prize.</p>
+            <img src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${luckyDraw.code}`} alt="Lucky Draw QR" className="w-32 h-32 mx-auto rounded-xl mb-3 p-2 bg-white shadow-sm" />
+            <p className="font-bold tracking-widest text-lg text-onyx">{luckyDraw.code}</p>
+            <p className="text-xs text-stone mt-1">Or access it anytime from your <Link to="/lucky-draw" className="underline font-medium text-rose">Lucky Draw</Link> page.</p>
+            {luckyDraw.is_used && <p className="mt-2 text-sm font-bold text-rose">Redeemed</p>}
           </div>
         )}
 
