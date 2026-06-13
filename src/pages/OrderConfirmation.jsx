@@ -130,8 +130,11 @@ const OrderConfirmation = () => {
             <img src={`https://quickchart.io/qr?text=${luckyDraw.code}&size=200&margin=2`} alt="Lucky Draw QR" className="w-32 h-32 mx-auto rounded-xl mb-3 p-2 bg-white shadow-sm" />
             <p className="font-bold tracking-widest text-lg text-onyx">{luckyDraw.code}</p>
             <p className="text-xs text-stone mt-1">Or access it anytime from your <Link to="/lucky-draw" className="underline font-medium text-rose">Lucky Draw</Link> page.</p>
-            {luckyDraw.is_used && <p className="mt-2 text-sm font-bold text-rose">Redeemed</p>}
-            {!luckyDraw.is_used && (
+            {order?.status === 'cancelled' ? (
+              <p className="mt-2 text-sm font-bold text-rose">Void (Cancelled)</p>
+            ) : luckyDraw.is_used ? (
+              <p className="mt-2 text-sm font-bold text-rose">Redeemed</p>
+            ) : (
               <button 
                 onClick={handleRedeem}
                 disabled={redeeming || order?.status !== 'delivered'}

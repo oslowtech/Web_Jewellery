@@ -60,7 +60,7 @@ export const getUserLuckyDrawEntries = async (userId) => {
 
 export const getAllLuckyDrawEntries = async () => {
   if (!isSupabaseConfigured || !supabase) return [];
-  const { data } = await supabase.from('lucky_draw_entries').select('*').order('created_at', { ascending: false });
+  const { data } = await supabase.from('lucky_draw_entries').select('*, orders(status)').order('created_at', { ascending: false });
   return data || [];
 };
 
@@ -74,8 +74,13 @@ export const verifyAndUseCode = async (code) => {
   if (findError || !entry) throw new Error("Invalid code or code not found.");
   if (entry.is_used) throw new Error(`Code was already used/redeemed on ${new Date(entry.used_at).toLocaleString()}`);
 
-  if (entry.order_id && entry.orders?.status !== 'delivered') {
-    throw new Error("Code can only be redeemed after the order is delivered.");
+  if (entry.order_id) {
+    if (entry.orders?.status === 'cancelled') {
+      throw new Error("This code is void because the associated order was cancelled.");
+    }
+    if (entry.orders?.status !== 'delivered') {
+      throw new Error("Code can only be redeemed after the order is delivered.");
+    }
   }
 
   const { data: updated, error: updateError } = await supabase.from('lucky_draw_entries').update({ is_used: true, used_at: new Date().toISOString() }).eq('id', entry.id).select().single();

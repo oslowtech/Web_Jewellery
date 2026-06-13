@@ -48,16 +48,17 @@ const LuckyDraw = () => {
       ) : (
         <div className="grid gap-6 sm:grid-cols-2">
           {entries.map(entry => (
-            <div key={entry.id} className={`rounded-3xl border ${entry.is_used ? "bg-stone/5 border-stone/20 opacity-70" : "bg-white border-rose/30 shadow-soft"} p-6 flex flex-col items-center text-center`}>
+            <div key={entry.id} className={`rounded-3xl border ${(entry.is_used || (entry.order_id && entry.orders?.status === 'cancelled')) ? "bg-stone/5 border-stone/20 opacity-70" : "bg-white border-rose/30 shadow-soft"} p-6 flex flex-col items-center text-center`}>
               <img src={`https://quickchart.io/qr?text=${entry.code}&size=200&margin=2`} alt="QR Code" className="w-40 h-40 rounded-xl mb-4 p-2 bg-white shadow-sm" />
               <p className="font-bold text-xl tracking-widest text-onyx">{entry.code}</p>
               <p className="text-sm text-stone mt-2">Order ID: {entry.order_id}</p>
               <p className="text-xs text-stone mt-1">Issued: {new Date(entry.created_at).toLocaleDateString()}</p>
               
-              {entry.is_used && (
+              {entry.order_id && entry.orders?.status === 'cancelled' ? (
+                <div className="mt-4 bg-rose/10 text-rose px-4 py-1.5 rounded-full text-sm font-bold w-full uppercase tracking-wider">VOID (CANCELLED)</div>
+              ) : entry.is_used ? (
                 <div className="mt-4 bg-rose/10 text-rose px-4 py-1.5 rounded-full text-sm font-bold w-full uppercase tracking-wider">REDEEMED</div>
-              )}
-              {!entry.is_used && (
+              ) : (
                 <button 
                   onClick={() => handleRedeem(entry.code, entry.id)}
                   disabled={redeemingId === entry.id || (entry.order_id && entry.orders?.status !== 'delivered')}

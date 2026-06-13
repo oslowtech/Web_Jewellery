@@ -934,7 +934,15 @@ const Admin = () => {
                {luckyDraws.map(draw => (
                  <div key={draw.id} className="rounded-2xl border border-white/70 bg-cream p-4 shadow-sm flex justify-between items-center">
                    <div><p className="font-bold text-onyx">{draw.code}</p><p className="text-sm font-medium">{draw.customer_name} ({draw.customer_phone})</p></div>
-                   <div>{draw.is_used ? (<span className="bg-rose/10 text-rose px-2 py-1 rounded text-xs font-bold">Redeemed</span>) : (<span className="bg-emerald-100 text-emerald-800 px-2 py-1 rounded text-xs font-bold">Valid</span>)}</div>
+                   <div>
+                     {draw.order_id && draw.orders?.status === 'cancelled' ? (
+                       <span className="bg-rose/10 text-rose px-2 py-1 rounded text-xs font-bold">Void</span>
+                     ) : draw.is_used ? (
+                       <span className="bg-stone/10 text-stone px-2 py-1 rounded text-xs font-bold">Redeemed</span>
+                     ) : (
+                       <span className="bg-emerald-100 text-emerald-800 px-2 py-1 rounded text-xs font-bold">Valid</span>
+                     )}
+                   </div>
                  </div>
                ))}
                {luckyDraws.length === 0 && <p className="text-sm text-stone italic">No lucky draw entries found.</p>}
