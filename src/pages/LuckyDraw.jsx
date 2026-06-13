@@ -60,10 +60,10 @@ const LuckyDraw = () => {
               {!entry.is_used && (
                 <button 
                   onClick={() => handleRedeem(entry.code, entry.id)}
-                  disabled={redeemingId === entry.id}
+                  disabled={redeemingId === entry.id || (entry.order_id && entry.orders?.status !== 'delivered')}
                   className="mt-4 w-full rounded-full bg-onyx px-4 py-1.5 text-sm font-bold text-white uppercase tracking-wider disabled:opacity-50"
                 >
-                  {redeemingId === entry.id ? "REDEEMING..." : "REDEEM NOW"}
+                  {redeemingId === entry.id ? "REDEEMING..." : (entry.order_id && entry.orders?.status !== 'delivered') ? "REDEEM AFTER DELIVERY" : "REDEEM NOW"}
                 </button>
               )}
             </div>

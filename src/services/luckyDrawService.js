@@ -48,13 +48,13 @@ export const createManualLuckyDrawEntry = async (customerName, customerPhone, am
 
 export const getLuckyDrawEntryByOrder = async (orderId) => {
   if (!isSupabaseConfigured || !supabase || !orderId) return null;
-  const { data } = await supabase.from('lucky_draw_entries').select('*').eq('order_id', orderId).maybeSingle();
+  const { data } = await supabase.from('lucky_draw_entries').select('*, orders(status)').eq('order_id', orderId).maybeSingle();
   return data;
 };
 
 export const getUserLuckyDrawEntries = async (userId) => {
   if (!isSupabaseConfigured || !supabase || !userId) return [];
-  const { data } = await supabase.from('lucky_draw_entries').select('*').eq('user_id', userId).order('created_at', { ascending: false });
+  const { data } = await supabase.from('lucky_draw_entries').select('*, orders(status)').eq('user_id', userId).order('created_at', { ascending: false });
   return data || [];
 };
 
@@ -69,10 +69,14 @@ export const verifyAndUseCode = async (code) => {
 
   const upperCode = code.toUpperCase().trim();
 
-  const { data: entry, error: findError } = await supabase.from('lucky_draw_entries').select('*').eq('code', upperCode).single();
+  const { data: entry, error: findError } = await supabase.from('lucky_draw_entries').select('*, orders(status)').eq('code', upperCode).single();
 
   if (findError || !entry) throw new Error("Invalid code or code not found.");
   if (entry.is_used) throw new Error(`Code was already used/redeemed on ${new Date(entry.used_at).toLocaleString()}`);
+
+  if (entry.order_id && entry.orders?.status !== 'delivered') {
+    throw new Error("Code can only be redeemed after the order is delivered.");
+  }
 
   const { data: updated, error: updateError } = await supabase.from('lucky_draw_entries').update({ is_used: true, used_at: new Date().toISOString() }).eq('id', entry.id).select().single();
 

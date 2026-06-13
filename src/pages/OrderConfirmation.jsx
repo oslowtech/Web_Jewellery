@@ -134,10 +134,10 @@ const OrderConfirmation = () => {
             {!luckyDraw.is_used && (
               <button 
                 onClick={handleRedeem}
-                disabled={redeeming}
+                disabled={redeeming || order?.status !== 'delivered'}
                 className="mt-4 rounded-full bg-onyx px-6 py-2 text-sm font-bold text-white uppercase tracking-wider disabled:opacity-50"
               >
-                {redeeming ? "REDEEMING..." : "REDEEM NOW"}
+                {redeeming ? "REDEEMING..." : order?.status !== 'delivered' ? "REDEEM AFTER DELIVERY" : "REDEEM NOW"}
               </button>
             )}
           </div>
