@@ -9,6 +9,7 @@ import { formatPrice } from "../utils/format.js";
 import { removeStorage } from "../utils/storage.js";
 import { supabase, isSupabaseConfigured } from "../lib/supabase.js";
 import { fetchSlides, saveSlide, deleteSlide, fetchCoupons, saveCoupon, deleteCoupon } from "../services/contentService.js";
+import { getAllLuckyDrawEntries, verifyAndUseCode } from "../services/luckyDrawService.js";
 
 const createEmptyForm = () => ({
   id: "",
@@ -73,6 +74,9 @@ const Admin = () => {
   const [slideForm, setSlideForm] = useState({ id: "", image_url: "", link_url: "", display_order: 0 });
   const [coupons, setCoupons] = useState([]);
   const [couponForm, setCouponForm] = useState({ id: "", code: "", discount_type: "bundle", discount_value: "", min_purchase_amount: 0, required_quantity: 0, valid_product_ids: "", is_active: true });
+  
+  const [luckyDraws, setLuckyDraws] = useState([]);
+  const [verifyCode, setVerifyCode] = useState("");
 
   const categories = useMemo(() => {
     return [...new Set(products.map((p) => p.category))].filter(Boolean);
@@ -173,6 +177,7 @@ const Admin = () => {
     loadCustomers();
     loadPageViews();
     loadSlidesAndCoupons();
+    loadLuckyDraws();
   }, []);
 
   const loadSlidesAndCoupons = async () => {
@@ -184,6 +189,13 @@ const Admin = () => {
     } catch (e) {
       console.error("Failed to load slides or coupons", e);
     }
+  };
+
+  const loadLuckyDraws = async () => {
+    try {
+      const data = await getAllLuckyDrawEntries();
+      setLuckyDraws(data || []);
+    } catch (e) { console.error("Failed to load lucky draws", e); }
   };
 
   useEffect(() => {
@@ -461,7 +473,7 @@ const Admin = () => {
       ) : null}
 
       <div className="flex gap-4 border-b border-stone/20 pb-4 overflow-x-auto mb-6">
-        {["products", "slides", "coupons"].map((tab) => (
+        {["products", "slides", "coupons", "lucky draw"].map((tab) => (
           <button
             key={tab}
             onClick={() => { setActiveTab(tab); setError(""); setSuccess(""); }}
@@ -834,6 +846,50 @@ const Admin = () => {
         </div>
       )}
 
+      {activeTab === "lucky draw" && (
+        <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+          <div className="space-y-4 rounded-3xl border border-white/70 bg-white/80 p-6 shadow-soft self-start">
+            <h2 className="font-display text-xl">Verify Lucky Draw Code</h2>
+            <p className="text-sm text-stone mb-2">Scan a customer's QR or type their code here to verify and redeem it.</p>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={verifyCode}
+                onChange={(e) => setVerifyCode(e.target.value.toUpperCase())}
+                placeholder="LUCKY-XXXXXX"
+                className="w-full rounded-xl border border-white/70 bg-white px-3 py-2 uppercase"
+              />
+              <button
+                onClick={async () => {
+                  setError(""); setSuccess(""); setSaving(true);
+                  try {
+                    const updated = await verifyAndUseCode(verifyCode);
+                    setSuccess(`Verified & Redeemed! Code ${updated.code} belonging to ${updated.customer_name} is valid.`);
+                    setVerifyCode("");
+                    loadLuckyDraws();
+                  } catch(err) { setError(err.message); } finally { setSaving(false); }
+                }}
+                disabled={saving || !verifyCode}
+                className="rounded-xl bg-onyx px-5 py-2 text-sm text-white disabled:opacity-50"
+              >
+                Redeem
+              </button>
+            </div>
+          </div>
+          <div className="space-y-4 rounded-3xl border border-white/70 bg-white/80 p-6 shadow-soft">
+             <h2 className="font-display text-xl">Recent Entries</h2>
+             <div className="space-y-3 max-h-[600px] overflow-y-auto">
+               {luckyDraws.map(draw => (
+                 <div key={draw.id} className="rounded-2xl border border-white/70 bg-cream p-4 shadow-sm flex justify-between items-center">
+                   <div><p className="font-bold text-onyx">{draw.code}</p><p className="text-sm font-medium">{draw.customer_name} ({draw.customer_phone})</p></div>
+                   <div>{draw.is_used ? (<span className="bg-rose/10 text-rose px-2 py-1 rounded text-xs font-bold">Redeemed</span>) : (<span className="bg-emerald-100 text-emerald-800 px-2 py-1 rounded text-xs font-bold">Valid</span>)}</div>
+                 </div>
+               ))}
+               {luckyDraws.length === 0 && <p className="text-sm text-stone italic">No lucky draw entries found.</p>}
+             </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

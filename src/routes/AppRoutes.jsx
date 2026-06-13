@@ -20,6 +20,7 @@ const OrderHistoryPage = lazy(() => import("../pages/OrderHistory.jsx"));
 const AdminOrdersPage = lazy(() => import("../pages/AdminOrders.jsx"));
 const ForgotPasswordPage = lazy(() => import("../pages/ForgotPassword.jsx"));
 const UpdatePasswordPage = lazy(() => import("../pages/UpdatePassword.jsx"));
+const LuckyDrawPage = lazy(() => import("../pages/LuckyDraw.jsx"));
 const NotFound = lazy(() => import("../pages/NotFound.jsx"));
 
 const PageTransition = ({ children }) => (
@@ -147,6 +148,16 @@ const AppRoutes = () => {
                   <AdminOrdersPage />
                 </PageTransition>
               </RequireAdmin>
+            }
+          />
+          <Route
+            path="/lucky-draw"
+            element={
+              <RequireAuth>
+                <PageTransition>
+                  <LuckyDrawPage />
+                </PageTransition>
+              </RequireAuth>
             }
           />
           <Route

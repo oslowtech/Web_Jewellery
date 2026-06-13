@@ -10,6 +10,7 @@ import { createOrder, validateOrderData } from '../services/orderService.js';
 import { PAYMENT_METHODS, finalizeManualOrder } from '../services/paymentService.js';
 import { calculateShipping } from '../utils/shipping.js';
 import { formatPrice } from '../utils/format.js';
+import { createLuckyDrawEntry } from '../services/luckyDrawService.js';
 import { Sparkles } from 'lucide-react';
 
 const Checkout = () => {
@@ -93,6 +94,7 @@ const Checkout = () => {
       }
       
       const codFee = paymentMethod === PAYMENT_METHODS.COD ? 50 : 0;
+      const finalOrderAmount = totals.totalAmount + codFee - cartDiscountAmount;
 
       // Prepare order data
       const orderData = {
@@ -109,7 +111,7 @@ const Checkout = () => {
             totalPrice: unitPrice * item.quantity
           };
         }),
-        totalAmount: totals.totalAmount + codFee - cartDiscountAmount,
+        totalAmount: finalOrderAmount,
         taxAmount: totals.taxAmount,
         shippingCharge: totals.shippingCharge,
         discountAmount: totals.discountAmount + cartDiscountAmount,
@@ -133,10 +135,18 @@ const Checkout = () => {
 
       // Finalize manual order
       const finalizedOrder = await finalizeManualOrder(order.id, paymentMethod);
+      
+      // Generate lucky draw if eligible
+      let luckyCode = null;
+      if (finalOrderAmount >= 3000) {
+        const drawEntry = await createLuckyDrawEntry(order.id, finalOrderAmount, user.id, checkoutState.billingAddress.full_name, checkoutState.billingAddress.phone);
+        if (drawEntry) luckyCode = drawEntry.code;
+      }
+
       clearCart();
       
       addToast({ message: 'Order placed successfully!', type: 'success' });
-      navigate('/cart');
+      navigate(luckyCode ? '/lucky-draw' : '/orders');
     } catch (err) {
       const message = err.message || 'Failed to process order';
       setError(message);
