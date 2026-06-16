@@ -10,7 +10,6 @@ import { removeStorage } from "../utils/storage.js";
 import { supabase, isSupabaseConfigured } from "../lib/supabase.js";
 import { fetchSlides, saveSlide, deleteSlide, fetchCoupons, saveCoupon, deleteCoupon } from "../services/contentService.js";
 import { getAllLuckyDrawEntries, verifyAndUseCode, createManualLuckyDrawEntry } from "../services/luckyDrawService.js";
-import InvoiceModal from "../components/admin/InvoiceModal.jsx";
 
 const createEmptyForm = () => ({
   id: "",
@@ -81,16 +80,6 @@ const Admin = () => {
   const [manualDrawForm, setManualDrawForm] = useState({ name: "", phone: "", amount: "" });
   const [generatedQR, setGeneratedQR] = useState(null);
   
-  const [showInvoice, setShowInvoice] = useState(false);
-  const [invoiceData, setInvoiceData] = useState(null);
-  const [billForm, setBillForm] = useState({
-    customerName: "",
-    mobile: "",
-    address: "",
-    invoiceNo: "",
-    date: new Date().toISOString().split('T')[0]
-  });
-  const [billItems, setBillItems] = useState([{ desc: "", qty: 1, price: "", discountPrice: "" }]);
 
   const categories = useMemo(() => {
     return [...new Set(products.map((p) => p.category))].filter(Boolean);
@@ -470,33 +459,6 @@ const Admin = () => {
     }
   };
 
-  const handlePrintManualBill = () => {
-    const items = billItems.filter(i => i.desc).map(i => ({
-      product_name: i.desc,
-      quantity: Number(i.qty) || 0,
-      price_per_unit: Number(i.price) || 0,
-      discount_price: Number(i.discountPrice) || 0,
-      total_price: (Number(i.discountPrice) || Number(i.price) || 0) * (Number(i.qty) || 0)
-    }));
-
-    let subtotal = 0, totalDiscount = 0;
-    items.forEach(i => {
-      subtotal += i.price_per_unit * i.quantity;
-      totalDiscount += (i.price_per_unit - i.discount_price) * i.quantity;
-    });
-
-    setInvoiceData({
-      customerName: billForm.customerName || "Walk-in Customer",
-      mobile: billForm.mobile || "N/A",
-      address: billForm.address || "Offline Sale",
-      invoiceNo: billForm.invoiceNo || `MAN-${Date.now().toString().slice(-6)}`,
-      date: billForm.date,
-      items, subtotal, totalDiscount,
-      grandTotal: subtotal - totalDiscount
-    });
-    setShowInvoice(true);
-  };
-
   return (
     <div className="mx-auto max-w-6xl space-y-8 px-4 py-10">
       <div className="space-y-2">
@@ -507,6 +469,9 @@ const Admin = () => {
         </p>
         <Link to="/admin-orders" className="inline-flex rounded-full bg-onyx px-4 py-2 text-sm text-white">
           Manage orders
+        </Link>
+        <Link to="/admin-orders" className="ml-3 inline-flex rounded-full border border-onyx/20 px-4 py-2 text-sm font-medium hover:bg-stone/10">
+          🧾 Open Bill Generator
         </Link>
       </div>
 
@@ -530,7 +495,7 @@ const Admin = () => {
       ) : null}
 
       <div className="flex gap-4 border-b border-stone/20 pb-4 overflow-x-auto mb-6">
-        {["products", "slides", "coupons", "lucky draw", "bill generator"].map((tab) => (
+        {["products", "slides", "coupons", "lucky draw"].map((tab) => (
           <button
             key={tab}
             onClick={() => { setActiveTab(tab); setError(""); setSuccess(""); }}
@@ -989,43 +954,6 @@ const Admin = () => {
           </div>
         </div>
       )}
-
-      {activeTab === "bill generator" && (
-        <div className="space-y-6">
-          <div className="space-y-6 rounded-3xl border border-white/70 bg-white/80 p-6 shadow-soft">
-            <h2 className="font-display text-2xl">Create Manual Bill</h2>
-            <div className="grid gap-4 md:grid-cols-2">
-              <input type="text" placeholder="Customer Name" value={billForm.customerName} onChange={e => setBillForm({...billForm, customerName: e.target.value})} className="w-full rounded-xl border border-white/70 bg-white px-3 py-2" />
-              <input type="text" placeholder="Mobile No." value={billForm.mobile} onChange={e => setBillForm({...billForm, mobile: e.target.value})} className="w-full rounded-xl border border-white/70 bg-white px-3 py-2" />
-              <input type="text" placeholder="Address (House, Area, City)" value={billForm.address} onChange={e => setBillForm({...billForm, address: e.target.value})} className="w-full rounded-xl border border-white/70 bg-white px-3 py-2 md:col-span-2" />
-              <input type="text" placeholder="Custom Invoice No. (Optional)" value={billForm.invoiceNo} onChange={e => setBillForm({...billForm, invoiceNo: e.target.value})} className="w-full rounded-xl border border-white/70 bg-white px-3 py-2" />
-              <input type="date" value={billForm.date} onChange={e => setBillForm({...billForm, date: e.target.value})} className="w-full rounded-xl border border-white/70 bg-white px-3 py-2" />
-            </div>
-            
-            <div className="space-y-3 pt-4 border-t border-stone/20">
-              <h3 className="font-medium text-lg text-onyx mb-4">Invoice Items</h3>
-              {billItems.map((item, index) => (
-                <div key={index} className="flex flex-wrap md:flex-nowrap gap-3 items-center">
-                  <input type="text" placeholder="Product Description" value={item.desc} onChange={e => { const items=[...billItems]; items[index].desc=e.target.value; setBillItems(items); }} className="flex-[2] w-full min-w-[200px] rounded-xl border border-white/70 bg-white px-3 py-2" />
-                  <input type="number" placeholder="Qty" value={item.qty} onChange={e => { const items=[...billItems]; items[index].qty=e.target.value; setBillItems(items); }} className="flex-[0.5] w-full min-w-[80px] rounded-xl border border-white/70 bg-white px-3 py-2" />
-                  <input type="number" placeholder="Original Price" value={item.price} onChange={e => { const items=[...billItems]; items[index].price=e.target.value; setBillItems(items); }} className="flex-1 w-full min-w-[120px] rounded-xl border border-white/70 bg-white px-3 py-2" />
-                  <input type="number" placeholder="Discounted Price" value={item.discountPrice} onChange={e => { const items=[...billItems]; items[index].discountPrice=e.target.value; setBillItems(items); }} className="flex-1 w-full min-w-[120px] rounded-xl border border-white/70 bg-white px-3 py-2" />
-                  <button onClick={() => setBillItems(billItems.filter((_, i) => i !== index))} className="p-2.5 text-rose bg-rose/10 hover:bg-rose/20 rounded-xl transition-colors"><Trash2 size={18} /></button>
-                </div>
-              ))}
-              <button onClick={() => setBillItems([...billItems, { desc: "", qty: 1, price: "", discountPrice: "" }])} className="text-sm font-medium text-onyx hover:text-rose transition-colors mt-2 underline block">
-                + Add another item
-              </button>
-            </div>
-            
-            <button onClick={handlePrintManualBill} disabled={!billItems.some(i => i.desc)} className="w-full rounded-full bg-onyx px-5 py-3.5 font-bold text-white mt-6 transition-transform hover:scale-[1.01] active:scale-95 disabled:opacity-50">
-              Preview & Print Bill
-            </button>
-          </div>
-        </div>
-      )}
-      
-      {showInvoice && invoiceData && <InvoiceModal data={invoiceData} onClose={() => setShowInvoice(false)} />}
     </div>
   );
 };

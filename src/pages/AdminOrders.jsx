@@ -266,7 +266,7 @@ const AdminOrders = () => {
 
         <div className="flex gap-4 border-b border-gray-200 pb-4 mb-8">
           <button onClick={() => setActiveTab('online')} className={`px-5 py-2.5 rounded-full text-sm font-bold transition-colors ${activeTab === 'online' ? 'bg-onyx text-white shadow-md' : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'}`}>Online Orders</button>
-          <button onClick={() => setActiveTab('manual')} className={`px-5 py-2.5 rounded-full text-sm font-bold transition-colors ${activeTab === 'manual' ? 'bg-onyx text-white shadow-md' : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'}`}>Create Manual Bill</button>
+          <button onClick={() => setActiveTab('manual')} className={`px-5 py-2.5 rounded-full text-sm font-bold transition-colors ${activeTab === 'manual' ? 'bg-onyx text-white shadow-md' : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'}`}>🧾 Bill Generator</button>
         </div>
 
         <div className={activeTab === 'online' ? 'space-y-8' : 'hidden'}>
@@ -507,7 +507,7 @@ const AdminOrders = () => {
 
         {activeTab === 'manual' && (
           <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <h2 className="text-2xl font-bold text-onyx mb-6">Create Manual Bill</h2>
+            <h2 className="text-2xl font-bold text-onyx mb-6">🧾 Bill Generator</h2>
             <div className="grid gap-4 md:grid-cols-2">
               <input type="text" placeholder="Customer Name" value={billForm.customerName} onChange={e => setBillForm({...billForm, customerName: e.target.value})} className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose/50" />
               <input type="text" placeholder="Mobile No." value={billForm.mobile} onChange={e => setBillForm({...billForm, mobile: e.target.value})} className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose/50" />
