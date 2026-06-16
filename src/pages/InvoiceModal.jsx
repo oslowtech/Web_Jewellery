@@ -14,8 +14,8 @@ const InvoiceModal = ({ data, onClose }) => {
         @media print {
           body * { visibility: hidden; }
           #invoice-print-wrapper, #invoice-print-wrapper * { visibility: visible; }
-          #invoice-print-wrapper { position: absolute; left: 0; top: 0; width: 100%; margin: 0; padding: 0; background-color: white; }
-          @page { size: A5 landscape; margin: 5mm; }
+          #invoice-print-wrapper { position: absolute; left: 0; top: 0; width: 100%; height: 100%; margin: 0; padding: 0; background-color: white; }
+          @page { size: A5 landscape; margin: 0; }
         }
       `}</style>
 
@@ -33,7 +33,7 @@ const InvoiceModal = ({ data, onClose }) => {
       </div>
 
       {/* A5 Landscape Print Area (210mm x 148mm) */}
-      <div className="w-[210mm] h-[148mm] bg-white p-[5mm] text-black font-sans box-border shadow-2xl print:shadow-none shrink-0 relative overflow-hidden">
+      <div className="w-[210mm] h-[148mm] bg-white p-[8mm] text-black font-sans box-border shadow-2xl print:shadow-none shrink-0 relative overflow-hidden mx-auto print:mx-0">
         {/* Outer Ornate Border Equivalent */}
         <div className="border-[3px] border-black p-1 h-full box-border relative">
           {/* Decorative Corner Blocks */}
@@ -43,9 +43,9 @@ const InvoiceModal = ({ data, onClose }) => {
           <div className="absolute -bottom-1 -right-1 w-3 h-3 border-[3px] border-black bg-white"></div>
 
           {/* Inner Content Wrapper */}
-          <div className="border border-black h-full flex flex-col p-4 box-border">
+          <div className="border border-black h-full flex flex-col p-3 box-border">
             {/* Header Section */}
-            <div className="flex items-center justify-between pb-3 border-b border-black">
+            <div className="flex items-center justify-between pb-2 border-b border-black">
               <div className="flex-1 text-center">
                 <div className="w-12 h-12 mx-auto rounded-full border border-black flex items-center justify-center font-serif text-3xl mb-1 pb-1">N</div>
                 <h1 className="font-serif text-xl tracking-widest leading-none font-bold">NAGNESHWARI</h1>
@@ -74,7 +74,7 @@ const InvoiceModal = ({ data, onClose }) => {
             </div>
 
             {/* Customer Details */}
-            <div className="flex gap-4 py-2 text-[10px] font-medium">
+            <div className="flex gap-4 py-1.5 text-[10px] font-medium">
               <div className="flex-[1.2] space-y-2">
                 <div className="flex items-end"><span className="w-24 shrink-0 leading-none">Customer Name</span> <span className="mr-2 leading-none">:</span> <span className="border-b border-black flex-1 uppercase pb-0.5 leading-none truncate">{data.customerName}</span></div>
                 <div className="flex items-end"><span className="w-24 shrink-0 leading-none">Mobile No.</span> <span className="mr-2 leading-none">:</span> <span className="border-b border-black flex-1 pb-0.5 leading-none">{data.mobile}</span></div>
@@ -87,7 +87,7 @@ const InvoiceModal = ({ data, onClose }) => {
             </div>
 
             {/* Table */}
-            <table className="w-full text-left border-collapse border border-black mt-2 text-[9px] flex-1">
+            <table className="w-full text-left border-collapse border border-black mt-1 text-[9px]">
               <thead>
                 <tr className="bg-black text-white text-center">
                   <th className="border border-black py-1 px-1 w-10 font-bold">SR. NO.</th>
@@ -100,7 +100,7 @@ const InvoiceModal = ({ data, onClose }) => {
               </thead>
               <tbody>
                 {rows.map((row, idx) => (
-                  <tr key={idx} className="text-center h-5">
+                  <tr key={idx} className="text-center h-[14px]">
                     <td className="border-r border-black">{!row.isEmpty ? idx + 1 : ''}</td>
                     <td className="border-r border-black text-left px-2 truncate max-w-[200px]">{!row.isEmpty ? row.product_name : ''}</td>
                     <td className="border-r border-black font-medium">{!row.isEmpty ? row.quantity : ''}</td>
@@ -114,7 +114,7 @@ const InvoiceModal = ({ data, onClose }) => {
             </table>
 
             {/* Footer */}
-            <div className="flex mt-2 pt-1 items-end">
+            <div className="flex mt-auto pt-1 items-end">
               <div className="flex-1 text-[8px] font-medium leading-tight">
                 <p className="font-bold mb-1 flex items-center gap-1 text-[9px]">◈ TERMS & CONDITIONS ◈</p>
                 <ol className="list-decimal pl-3 space-y-0.5">
@@ -137,7 +137,7 @@ const InvoiceModal = ({ data, onClose }) => {
                   <div className="flex justify-between"><span>TOTAL DISCOUNT</span> <span>: {Number(data.totalDiscount).toFixed(2)}</span></div>
                   <div className="flex justify-between border border-black p-1 font-bold mt-1.5 bg-gray-100 uppercase"><span>GRAND TOTAL</span> <span>: {Number(data.grandTotal).toFixed(2)}</span></div>
                 </div>
-                <div className="mt-8 border-t border-dashed border-gray-500 pt-1 text-center text-[8px] w-48 ml-auto font-bold text-gray-600">AUTHORIZED SIGNATURE</div>
+                <div className="mt-6 border-t border-dashed border-gray-500 pt-1 text-center text-[8px] w-48 ml-auto font-bold text-gray-600">AUTHORIZED SIGNATURE</div>
               </div>
             </div>
           </div>
