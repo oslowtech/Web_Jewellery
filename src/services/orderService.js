@@ -734,3 +734,32 @@ export async function saveManualInvoice(invoiceData) {
     throw new Error(err.message || 'Error saving manual invoice');
   }
 }
+
+export async function fetchManualInvoices() {
+  requireSupabase();
+  const { data, error } = await supabase.from('manual_invoices').select('*').order('created_at', { ascending: false });
+  if (error) throw error;
+  return data || [];
+}
+
+export async function checkCustomerDetailsByPhone(phone) {
+  requireSupabase();
+  try {
+    // Check online addresses
+    const { data: addr } = await supabase.from('addresses').select('full_name, street_address, city, state, postal_code').eq('phone', phone).order('created_at', { ascending: false }).limit(1).maybeSingle();
+    if (addr) {
+      return {
+        name: addr.full_name,
+        address: [addr.street_address, addr.city, addr.state, addr.postal_code].filter(Boolean).join(', ')
+      };
+    }
+    // Check offline invoices
+    const { data: inv } = await supabase.from('manual_invoices').select('customer_name, address').eq('mobile', phone).order('created_at', { ascending: false }).limit(1).maybeSingle();
+    if (inv) {
+      return { name: inv.customer_name, address: inv.address };
+    }
+    return null;
+  } catch (err) {
+    return null;
+  }
+}

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ChevronDown, X, Trash2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useToast } from '../context/ToastContext.jsx';
-import { fetchAllOrdersForAdmin, updateOrderStatusAdmin, saveManualInvoice } from '../services/orderService.js';
+import { fetchAllOrdersForAdmin, updateOrderStatusAdmin, saveManualInvoice, fetchManualInvoices, checkCustomerDetailsByPhone } from '../services/orderService.js';
 import { formatPrice } from '../utils/format.js';
 import InvoiceModal from './InvoiceModal.jsx';
 
@@ -71,6 +71,7 @@ const AdminOrders = () => {
   const [activeTab, setActiveTab] = useState('online');
   const [billForm, setBillForm] = useState({ customerName: '', mobile: '', address: '', invoiceNo: '', date: new Date().toISOString().split('T')[0] });
   const [billItems, setBillItems] = useState([{ desc: '', qty: 1, price: '', discountPrice: '' }]);
+  const [manualInvoices, setManualInvoices] = useState([]);
 
   // Filters
   const [statusFilter, setStatusFilter] = useState(null);
@@ -87,6 +88,7 @@ const AdminOrders = () => {
       return;
     }
     loadOrders();
+    loadManualInvoices();
   }, [isAdmin, authLoading, navigate]);
 
   // Apply filters whenever filter state changes
@@ -106,6 +108,15 @@ const AdminOrders = () => {
       addToast('Failed to load orders');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadManualInvoices = async () => {
+    try {
+      const data = await fetchManualInvoices();
+      setManualInvoices(data);
+    } catch (err) {
+      console.error('Error loading manual invoices:', err);
     }
   };
 
@@ -260,11 +271,25 @@ const AdminOrders = () => {
       // Clear the form fields upon success
       setBillForm({ customerName: '', mobile: '', address: '', invoiceNo: '', date: new Date().toISOString().split('T')[0] });
       setBillItems([{ desc: '', qty: 1, price: '', discountPrice: '' }]);
+      loadManualInvoices();
       addToast('Manual bill saved and generated.');
     } catch (err) {
       addToast(`Failed to generate bill: ${err.message}`);
     } finally {
       setIsUpdating(false);
+    }
+  };
+
+  const handlePhoneBlur = async () => {
+    if (!billForm.mobile || billForm.mobile.length < 10) return;
+    const customer = await checkCustomerDetailsByPhone(billForm.mobile);
+    if (customer) {
+      setBillForm(prev => ({
+        ...prev,
+        customerName: prev.customerName || customer.name,
+        address: prev.address || customer.address
+      }));
+      addToast('Customer details auto-filled from database.', 'success');
     }
   };
 
@@ -532,35 +557,63 @@ const AdminOrders = () => {
         </div>
 
         {activeTab === 'manual' && (
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <h2 className="text-2xl font-bold text-onyx mb-6">🧾 Bill Generator</h2>
-            <div className="grid gap-4 md:grid-cols-2">
-              <input type="text" placeholder="Customer Name" value={billForm.customerName} onChange={e => setBillForm({...billForm, customerName: e.target.value})} className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose/50" />
-              <input type="text" placeholder="Mobile No." value={billForm.mobile} onChange={e => setBillForm({...billForm, mobile: e.target.value})} className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose/50" />
-              <input type="text" placeholder="Address (House, Area, City)" value={billForm.address} onChange={e => setBillForm({...billForm, address: e.target.value})} className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose/50 md:col-span-2" />
-              <input type="text" placeholder="Custom Invoice No. (Optional)" value={billForm.invoiceNo} onChange={e => setBillForm({...billForm, invoiceNo: e.target.value})} className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose/50" />
-              <input type="date" value={billForm.date} onChange={e => setBillForm({...billForm, date: e.target.value})} className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose/50" />
-            </div>
-            
-            <div className="space-y-3 pt-6 mt-6 border-t border-gray-200">
-              <h3 className="font-semibold text-lg text-onyx mb-4">Invoice Items</h3>
-              {billItems.map((item, index) => (
-                <div key={index} className="flex flex-wrap md:flex-nowrap gap-3 items-center">
-                  <input type="text" placeholder="Product Description" value={item.desc} onChange={e => { const items=[...billItems]; items[index].desc=e.target.value; setBillItems(items); }} className="flex-[2] w-full min-w-[200px] rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose/50" />
-                  <input type="number" placeholder="Qty" value={item.qty} onChange={e => { const items=[...billItems]; items[index].qty=e.target.value; setBillItems(items); }} className="flex-[0.5] w-full min-w-[80px] rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose/50" />
-                  <input type="number" placeholder="Original Price" value={item.price} onChange={e => { const items=[...billItems]; items[index].price=e.target.value; setBillItems(items); }} className="flex-1 w-full min-w-[120px] rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose/50" />
-                  <input type="number" placeholder="Discounted Price" value={item.discountPrice} onChange={e => { const items=[...billItems]; items[index].discountPrice=e.target.value; setBillItems(items); }} className="flex-1 w-full min-w-[120px] rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose/50" />
-                  <button onClick={() => setBillItems(billItems.filter((_, i) => i !== index))} className="p-2.5 text-red-500 bg-red-50 hover:bg-red-100 rounded-xl transition-colors"><Trash2 size={18} /></button>
-                </div>
-              ))}
-              <button onClick={() => setBillItems([...billItems, { desc: "", qty: 1, price: "", discountPrice: "" }])} className="text-sm font-bold text-rose hover:text-rose/80 transition-colors mt-4 block">
-                + Add another item
+          <div className="space-y-6">
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <h2 className="text-2xl font-bold text-onyx mb-6">🧾 Bill Generator</h2>
+              <div className="grid gap-4 md:grid-cols-2">
+                <input type="text" placeholder="Mobile No. (Type & press outside to auto-fill)" value={billForm.mobile} onChange={e => setBillForm({...billForm, mobile: e.target.value})} onBlur={handlePhoneBlur} className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose/50" />
+                <input type="text" placeholder="Customer Name" value={billForm.customerName} onChange={e => setBillForm({...billForm, customerName: e.target.value})} className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose/50" />
+                <input type="text" placeholder="Address (House, Area, City)" value={billForm.address} onChange={e => setBillForm({...billForm, address: e.target.value})} className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose/50 md:col-span-2" />
+                <input type="text" placeholder="Custom Invoice No. (Optional)" value={billForm.invoiceNo} onChange={e => setBillForm({...billForm, invoiceNo: e.target.value})} className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose/50" />
+                <input type="date" value={billForm.date} onChange={e => setBillForm({...billForm, date: e.target.value})} className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose/50" />
+              </div>
+              
+              <div className="space-y-3 pt-6 mt-6 border-t border-gray-200">
+                <h3 className="font-semibold text-lg text-onyx mb-4">Invoice Items</h3>
+                {billItems.map((item, index) => (
+                  <div key={index} className="flex flex-wrap md:flex-nowrap gap-3 items-center">
+                    <input type="text" placeholder="Product Description" value={item.desc} onChange={e => { const items=[...billItems]; items[index].desc=e.target.value; setBillItems(items); }} className="flex-[2] w-full min-w-[200px] rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose/50" />
+                    <input type="number" placeholder="Qty" value={item.qty} onChange={e => { const items=[...billItems]; items[index].qty=e.target.value; setBillItems(items); }} className="flex-[0.5] w-full min-w-[80px] rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose/50" />
+                    <input type="number" placeholder="Original Price" value={item.price} onChange={e => { const items=[...billItems]; items[index].price=e.target.value; setBillItems(items); }} className="flex-1 w-full min-w-[120px] rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose/50" />
+                    <input type="number" placeholder="Discounted Price" value={item.discountPrice} onChange={e => { const items=[...billItems]; items[index].discountPrice=e.target.value; setBillItems(items); }} className="flex-1 w-full min-w-[120px] rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose/50" />
+                    <button onClick={() => setBillItems(billItems.filter((_, i) => i !== index))} className="p-2.5 text-red-500 bg-red-50 hover:bg-red-100 rounded-xl transition-colors"><Trash2 size={18} /></button>
+                  </div>
+                ))}
+                <button onClick={() => setBillItems([...billItems, { desc: "", qty: 1, price: "", discountPrice: "" }])} className="text-sm font-bold text-rose hover:text-rose/80 transition-colors mt-4 block">
+                  + Add another item
+                </button>
+              </div>
+              
+              <button onClick={handlePrintManualBill} disabled={!billItems.some(i => i.desc) || isUpdating} className="w-full rounded-xl bg-onyx px-5 py-3.5 font-bold text-white mt-8 transition-transform hover:bg-onyx/90 active:scale-95 disabled:opacity-50">
+                {isUpdating ? 'Saving & Generating...' : 'Save & Print Bill'}
               </button>
             </div>
-            
-            <button onClick={handlePrintManualBill} disabled={!billItems.some(i => i.desc) || isUpdating} className="w-full rounded-xl bg-onyx px-5 py-3.5 font-bold text-white mt-8 transition-transform hover:bg-onyx/90 active:scale-95 disabled:opacity-50">
-              {isUpdating ? 'Saving & Generating...' : 'Save & Print Bill'}
-            </button>
+
+            {manualInvoices.length > 0 && (
+              <div className="bg-white rounded-lg border border-gray-200 p-6">
+                <h2 className="text-xl font-bold text-onyx mb-4">Past Manual Bills</h2>
+                <div className="space-y-3">
+                  {manualInvoices.map(inv => (
+                    <div key={inv.id} className="flex justify-between items-center p-4 border border-gray-100 bg-gray-50 rounded-lg">
+                      <div>
+                        <p className="font-bold text-onyx">{inv.invoice_number}</p>
+                        <p className="text-sm text-gray-600">{inv.customer_name} ({inv.mobile})</p>
+                        <p className="text-xs text-gray-500 mt-0.5">{new Date(inv.created_at).toLocaleDateString()}</p>
+                      </div>
+                      <div className="text-right flex flex-col items-end">
+                        <p className="font-bold text-onyx mb-2">{formatPrice(Number(inv.grand_total))}</p>
+                        <button onClick={() => {
+                          setInvoiceData({
+                            customerName: inv.customer_name, mobile: inv.mobile, address: inv.address, invoiceNo: inv.invoice_number, date: inv.date, items: inv.items, subtotal: inv.subtotal, totalDiscount: inv.total_discount, grandTotal: inv.grand_total
+                          });
+                          setShowInvoice(true);
+                        }} className="text-sm font-medium text-rose hover:underline">View / Print</button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
