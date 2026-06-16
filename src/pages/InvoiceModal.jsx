@@ -48,13 +48,7 @@ const InvoiceModal = ({ data, onClose }) => {
             {/* Header Section */}
             <div className="flex items-center justify-between pb-2 border-b border-black">
               <div className="flex-1 text-center">
-                <img src={logo} alt="Nagneshwari Logo" className="h-14 mx-auto mb-1 object-contain grayscale" />
-                <h1 className="font-serif text-xl tracking-widest leading-none font-bold">NAGNESHWARI</h1>
-                <div className="text-[8px] tracking-[0.2em] mt-1 uppercase flex items-center justify-center gap-1">
-                  <span className="w-3 h-[1px] bg-black inline-block"></span>
-                  JEWELLERS
-                  <span className="w-3 h-[1px] bg-black inline-block"></span>
-                </div>
+                <img src={logo} alt="Nagneshwari Logo" className="h-24 mx-auto mb-2 object-contain grayscale" />
                 <p className="text-[7px] mt-1 font-medium italic text-gray-700">Timeless Elegance. Crafted for Generations.</p>
               </div>
               <div className="flex-1 border-l border-r border-black px-4 flex flex-col gap-1.5 text-[9px]">
