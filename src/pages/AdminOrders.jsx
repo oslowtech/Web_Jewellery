@@ -1,6 +1,6 @@
 ﻿﻿﻿﻿import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronDown, X } from 'lucide-react';
+import { ChevronDown, X, Trash2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useToast } from '../context/ToastContext.jsx';
 import { fetchAllOrdersForAdmin, updateOrderStatusAdmin } from '../services/orderService.js';
@@ -68,6 +68,9 @@ const AdminOrders = () => {
   const [isUpdating, setIsUpdating] = useState(false);
   const [showInvoice, setShowInvoice] = useState(false);
   const [invoiceData, setInvoiceData] = useState(null);
+  const [activeTab, setActiveTab] = useState('online');
+  const [billForm, setBillForm] = useState({ customerName: '', mobile: '', address: '', invoiceNo: '', date: new Date().toISOString().split('T')[0] });
+  const [billItems, setBillItems] = useState([{ desc: '', qty: 1, price: '', discountPrice: '' }]);
 
   // Filters
   const [statusFilter, setStatusFilter] = useState(null);
@@ -212,6 +215,33 @@ const AdminOrders = () => {
       setShowInvoice(true);
   };
 
+  const handlePrintManualBill = () => {
+    const items = billItems.filter(i => i.desc).map(i => ({
+      product_name: i.desc,
+      quantity: Number(i.qty) || 0,
+      price_per_unit: Number(i.price) || 0,
+      discount_price: Number(i.discountPrice) || 0,
+      total_price: (Number(i.discountPrice) || Number(i.price) || 0) * (Number(i.qty) || 0)
+    }));
+
+    let subtotal = 0, totalDiscount = 0;
+    items.forEach(i => {
+      subtotal += i.price_per_unit * i.quantity;
+      totalDiscount += (i.price_per_unit - i.discount_price) * i.quantity;
+    });
+
+    setInvoiceData({
+      customerName: billForm.customerName || "Walk-in Customer",
+      mobile: billForm.mobile || "N/A",
+      address: billForm.address || "Offline Sale",
+      invoiceNo: billForm.invoiceNo || `MAN-${Date.now().toString().slice(-6)}`,
+      date: billForm.date,
+      items, subtotal, totalDiscount,
+      grandTotal: subtotal - totalDiscount
+    });
+    setShowInvoice(true);
+  };
+
   const getStats = () => {
     return {
       total: orders.length,
@@ -234,239 +264,279 @@ const AdminOrders = () => {
           <p className="text-gray-600">Manage and track all customer orders</p>
         </div>
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
-          <div className="bg-white p-4 rounded-lg border border-gray-200">
-            <p className="text-2xl font-bold text-onyx">{stats.total}</p>
-            <p className="text-sm text-gray-600">Total Orders</p>
-          </div>
-          <div className="bg-white p-4 rounded-lg border border-gray-200">
-            <p className="text-2xl font-bold text-yellow-600">{stats.pending}</p>
-            <p className="text-sm text-gray-600">Pending</p>
-          </div>
-          <div className="bg-white p-4 rounded-lg border border-gray-200">
-            <p className="text-2xl font-bold text-purple-600">{stats.processing}</p>
-            <p className="text-sm text-gray-600">Processing</p>
-          </div>
-          <div className="bg-white p-4 rounded-lg border border-gray-200">
-            <p className="text-2xl font-bold text-indigo-600">{stats.shipped}</p>
-            <p className="text-sm text-gray-600">Shipped</p>
-          </div>
-          <div className="bg-white p-4 rounded-lg border border-gray-200">
-            <p className="text-2xl font-bold text-green-600">{stats.delivered}</p>
-            <p className="text-sm text-gray-600">Delivered</p>
-          </div>
+        <div className="flex gap-4 border-b border-gray-200 pb-4 mb-8">
+          <button onClick={() => setActiveTab('online')} className={`px-5 py-2.5 rounded-full text-sm font-bold transition-colors ${activeTab === 'online' ? 'bg-onyx text-white shadow-md' : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'}`}>Online Orders</button>
+          <button onClick={() => setActiveTab('manual')} className={`px-5 py-2.5 rounded-full text-sm font-bold transition-colors ${activeTab === 'manual' ? 'bg-onyx text-white shadow-md' : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'}`}>Create Manual Bill</button>
         </div>
 
-        {/* Filters */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6 mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-onyx">Filters</h2>
-            {(statusFilter || paymentStatusFilter || startDate || endDate || searchQuery) && (
-              <button
-                onClick={clearFilters}
-                className="text-rose hover:text-rose/80 text-sm font-medium"
-              >
-                Clear all
-              </button>
-            )}
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* Search */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Search by Order/Customer
-              </label>
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Order # or name..."
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-rose"
-              />
+        <div className={activeTab === 'online' ? 'space-y-8' : 'hidden'}>
+          {/* Stats Grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+            <div className="bg-white p-4 rounded-lg border border-gray-200">
+              <p className="text-2xl font-bold text-onyx">{stats.total}</p>
+              <p className="text-sm text-gray-600">Total Orders</p>
             </div>
-
-            {/* Status Filter */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Order Status
-              </label>
-              <select
-                value={statusFilter || ''}
-                onChange={(e) => setStatusFilter(e.target.value || null)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-rose"
-              >
-                <option value="">All Statuses</option>
-                {ORDER_STATUSES.map(status => (
-                  <option key={status} value={status}>
-                    {formatStatus(status).charAt(0).toUpperCase() + formatStatus(status).slice(1)}
-                  </option>
-                ))}
-              </select>
+            <div className="bg-white p-4 rounded-lg border border-gray-200">
+              <p className="text-2xl font-bold text-yellow-600">{stats.pending}</p>
+              <p className="text-sm text-gray-600">Pending</p>
             </div>
-
-            {/* Payment Status Filter */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Payment Status
-              </label>
-              <select
-                value={paymentStatusFilter || ''}
-                onChange={(e) => setPaymentStatusFilter(e.target.value || null)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-rose"
-              >
-                <option value="">All Payment Status</option>
-                {PAYMENT_STATUSES.map(status => (
-                  <option key={status} value={status}>
-                    {status.charAt(0).toUpperCase() + status.slice(1)}
-                  </option>
-                ))}
-              </select>
+            <div className="bg-white p-4 rounded-lg border border-gray-200">
+              <p className="text-2xl font-bold text-purple-600">{stats.processing}</p>
+              <p className="text-sm text-gray-600">Processing</p>
             </div>
-
-            {/* Date Range */}
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  From
-                </label>
-                <input
-                  type="date"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                  className="w-full px-2 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-rose"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  To
-                </label>
-                <input
-                  type="date"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                  className="w-full px-2 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-rose"
-                />
-              </div>
+            <div className="bg-white p-4 rounded-lg border border-gray-200">
+              <p className="text-2xl font-bold text-indigo-600">{stats.shipped}</p>
+              <p className="text-sm text-gray-600">Shipped</p>
+            </div>
+            <div className="bg-white p-4 rounded-lg border border-gray-200">
+              <p className="text-2xl font-bold text-green-600">{stats.delivered}</p>
+              <p className="text-sm text-gray-600">Delivered</p>
             </div>
           </div>
-        </div>
 
-        {/* Orders List */}
-        <div className="space-y-4">
-          {loading ? (
-            <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
-              <p className="text-gray-500">Loading orders...</p>
-            </div>
-          ) : error ? (
-            <div className="text-center py-12 bg-red-50 rounded-lg border border-red-200">
-              <p className="text-red-700 font-medium">Error: {error}</p>
-              <button
-                onClick={loadOrders}
-                className="mt-4 text-rose hover:underline"
-              >
-                Try again
-              </button>
-            </div>
-          ) : filteredOrders.length === 0 ? (
-            <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
-              <p className="text-gray-500 mb-4">
-                {orders.length === 0 ? 'No orders found' : 'No orders match these filters'}
-              </p>
-              {orders.length > 0 && (
+          {/* Filters */}
+          <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-onyx">Filters</h2>
+              {(statusFilter || paymentStatusFilter || startDate || endDate || searchQuery) && (
                 <button
                   onClick={clearFilters}
-                  className="text-rose hover:underline"
+                  className="text-rose hover:text-rose/80 text-sm font-medium"
                 >
-                  Clear filters
+                  Clear all
                 </button>
               )}
             </div>
-          ) : (
-            <div>
-              <p className="text-sm text-gray-600 mb-4">
-                Showing {filteredOrders.length} of {orders.length} orders
-              </p>
-              <div className="space-y-4">
-                {filteredOrders.map(order => (
-                  <div
-                    key={order.id}
-                    className="bg-white p-6 rounded-lg border border-gray-200 hover:shadow-lg transition cursor-pointer"
-                    onClick={() => {
-                      setSelectedOrder(order);
-                      setShowDetailModal(true);
-                    }}
-                  >
-                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-                      {/* Order Info */}
-                      <div className="flex-1">
-                        <div className="flex items-center gap-4 mb-2">
-                          <h3 className="text-lg font-semibold text-onyx">
-                            Order {order.order_number}
-                          </h3>
-                          <span
-                            className={`px-3 py-1 rounded-full text-xs font-semibold border ${
-                              ORDER_STATUS_COLORS[order.status] || 'bg-gray-100 text-gray-800'
-                            }`}
-                          >
-                            {formatStatus(order.status)}
-                          </span>
-                        </div>
 
-                        <p className="text-sm text-gray-600 mb-3">
-                          {getCustomerName(order)}
-                          {getCustomerEmail(order) && (
-                            <> · {getCustomerEmail(order)}</>
-                          )}
-                        </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* Search */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Search by Order/Customer
+                </label>
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Order # or name..."
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-rose"
+                />
+              </div>
 
-                        {/* Items Count */}
-                        <p className="text-xs text-gray-600">
-                          {order.order_items?.length || 0} item(s)
-                        </p>
+              {/* Status Filter */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Order Status
+                </label>
+                <select
+                  value={statusFilter || ''}
+                  onChange={(e) => setStatusFilter(e.target.value || null)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-rose"
+                >
+                  <option value="">All Statuses</option>
+                  {ORDER_STATUSES.map(status => (
+                    <option key={status} value={status}>
+                      {formatStatus(status).charAt(0).toUpperCase() + formatStatus(status).slice(1)}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-                        {/* Gifting Badge */}
-                        {order.gifting_metadata?.[0]?.is_gift && (
-                          <span className="inline-block mt-2 text-xs bg-pink-100 text-pink-700 px-2 py-1 rounded">
-                            Gift Order
-                          </span>
-                        )}
-                      </div>
+              {/* Payment Status Filter */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Payment Status
+                </label>
+                <select
+                  value={paymentStatusFilter || ''}
+                  onChange={(e) => setPaymentStatusFilter(e.target.value || null)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-rose"
+                >
+                  <option value="">All Payment Status</option>
+                  {PAYMENT_STATUSES.map(status => (
+                    <option key={status} value={status}>
+                      {status.charAt(0).toUpperCase() + status.slice(1)}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-                      {/* Amount and Date */}
-                      <div className="text-right">
-                        <p className="text-2xl font-bold text-onyx mb-2">
-                          {formatPrice(Number(order.total_amount || 0))}
-                        </p>
-                        <p className="text-xs text-gray-600 mb-2">
-                          {new Date(order.created_at).toLocaleDateString('en-IN', {
-                            year: 'numeric',
-                            month: 'short',
-                            day: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit'
-                          })}
-                        </p>
-
-                        {/* Payment Status */}
-                        {order.payment_status && (
-                          <span
-                            className={`inline-block px-2 py-1 rounded text-xs font-medium ${
-                              PAYMENT_STATUS_COLORS[order.payment_status] || 'bg-gray-100'
-                            }`}
-                          >
-                            Payment: {order.payment_status}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
+              {/* Date Range */}
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    From
+                  </label>
+                  <input
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    className="w-full px-2 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-rose"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    To
+                  </label>
+                  <input
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    className="w-full px-2 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-rose"
+                  />
+                </div>
               </div>
             </div>
-          )}
+          </div>
+
+          {/* Orders List */}
+          <div>
+            {loading ? (
+              <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
+                <p className="text-gray-500">Loading orders...</p>
+              </div>
+            ) : error ? (
+              <div className="text-center py-12 bg-red-50 rounded-lg border border-red-200">
+                <p className="text-red-700 font-medium">Error: {error}</p>
+                <button
+                  onClick={loadOrders}
+                  className="mt-4 text-rose hover:underline"
+                >
+                  Try again
+                </button>
+              </div>
+            ) : filteredOrders.length === 0 ? (
+              <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
+                <p className="text-gray-500 mb-4">
+                  {orders.length === 0 ? 'No orders found' : 'No orders match these filters'}
+                </p>
+                {orders.length > 0 && (
+                  <button
+                    onClick={clearFilters}
+                    className="text-rose hover:underline"
+                  >
+                    Clear filters
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div>
+                <p className="text-sm text-gray-600 mb-4">
+                  Showing {filteredOrders.length} of {orders.length} orders
+                </p>
+                <div className="space-y-4">
+                  {filteredOrders.map(order => (
+                    <div
+                      key={order.id}
+                      className="bg-white p-6 rounded-lg border border-gray-200 hover:shadow-lg transition cursor-pointer"
+                      onClick={() => {
+                        setSelectedOrder(order);
+                        setShowDetailModal(true);
+                      }}
+                    >
+                      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                        {/* Order Info */}
+                        <div className="flex-1">
+                          <div className="flex items-center gap-4 mb-2">
+                            <h3 className="text-lg font-semibold text-onyx">
+                              Order {order.order_number}
+                            </h3>
+                            <span
+                              className={`px-3 py-1 rounded-full text-xs font-semibold border ${
+                                ORDER_STATUS_COLORS[order.status] || 'bg-gray-100 text-gray-800'
+                              }`}
+                            >
+                              {formatStatus(order.status)}
+                            </span>
+                          </div>
+
+                          <p className="text-sm text-gray-600 mb-3">
+                            {getCustomerName(order)}
+                            {getCustomerEmail(order) && (
+                              <> · {getCustomerEmail(order)}</>
+                            )}
+                          </p>
+
+                          {/* Items Count */}
+                          <p className="text-xs text-gray-600">
+                            {order.order_items?.length || 0} item(s)
+                          </p>
+
+                          {/* Gifting Badge */}
+                          {order.gifting_metadata?.[0]?.is_gift && (
+                            <span className="inline-block mt-2 text-xs bg-pink-100 text-pink-700 px-2 py-1 rounded">
+                              Gift Order
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Amount and Date */}
+                        <div className="text-right">
+                          <p className="text-2xl font-bold text-onyx mb-2">
+                            {formatPrice(Number(order.total_amount || 0))}
+                          </p>
+                          <p className="text-xs text-gray-600 mb-2">
+                            {new Date(order.created_at).toLocaleDateString('en-IN', {
+                              year: 'numeric',
+                              month: 'short',
+                              day: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </p>
+
+                          {/* Payment Status */}
+                          {order.payment_status && (
+                            <span
+                              className={`inline-block px-2 py-1 rounded text-xs font-medium ${
+                                PAYMENT_STATUS_COLORS[order.payment_status] || 'bg-gray-100'
+                              }`}
+                            >
+                              Payment: {order.payment_status}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
+
+        {activeTab === 'manual' && (
+          <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <h2 className="text-2xl font-bold text-onyx mb-6">Create Manual Bill</h2>
+            <div className="grid gap-4 md:grid-cols-2">
+              <input type="text" placeholder="Customer Name" value={billForm.customerName} onChange={e => setBillForm({...billForm, customerName: e.target.value})} className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose/50" />
+              <input type="text" placeholder="Mobile No." value={billForm.mobile} onChange={e => setBillForm({...billForm, mobile: e.target.value})} className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose/50" />
+              <input type="text" placeholder="Address (House, Area, City)" value={billForm.address} onChange={e => setBillForm({...billForm, address: e.target.value})} className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose/50 md:col-span-2" />
+              <input type="text" placeholder="Custom Invoice No. (Optional)" value={billForm.invoiceNo} onChange={e => setBillForm({...billForm, invoiceNo: e.target.value})} className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose/50" />
+              <input type="date" value={billForm.date} onChange={e => setBillForm({...billForm, date: e.target.value})} className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose/50" />
+            </div>
+            
+            <div className="space-y-3 pt-6 mt-6 border-t border-gray-200">
+              <h3 className="font-semibold text-lg text-onyx mb-4">Invoice Items</h3>
+              {billItems.map((item, index) => (
+                <div key={index} className="flex flex-wrap md:flex-nowrap gap-3 items-center">
+                  <input type="text" placeholder="Product Description" value={item.desc} onChange={e => { const items=[...billItems]; items[index].desc=e.target.value; setBillItems(items); }} className="flex-[2] w-full min-w-[200px] rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose/50" />
+                  <input type="number" placeholder="Qty" value={item.qty} onChange={e => { const items=[...billItems]; items[index].qty=e.target.value; setBillItems(items); }} className="flex-[0.5] w-full min-w-[80px] rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose/50" />
+                  <input type="number" placeholder="Original Price" value={item.price} onChange={e => { const items=[...billItems]; items[index].price=e.target.value; setBillItems(items); }} className="flex-1 w-full min-w-[120px] rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose/50" />
+                  <input type="number" placeholder="Discounted Price" value={item.discountPrice} onChange={e => { const items=[...billItems]; items[index].discountPrice=e.target.value; setBillItems(items); }} className="flex-1 w-full min-w-[120px] rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose/50" />
+                  <button onClick={() => setBillItems(billItems.filter((_, i) => i !== index))} className="p-2.5 text-red-500 bg-red-50 hover:bg-red-100 rounded-xl transition-colors"><Trash2 size={18} /></button>
+                </div>
+              ))}
+              <button onClick={() => setBillItems([...billItems, { desc: "", qty: 1, price: "", discountPrice: "" }])} className="text-sm font-bold text-rose hover:text-rose/80 transition-colors mt-4 block">
+                + Add another item
+              </button>
+            </div>
+            
+            <button onClick={handlePrintManualBill} disabled={!billItems.some(i => i.desc)} className="w-full rounded-xl bg-onyx px-5 py-3.5 font-bold text-white mt-8 transition-transform hover:bg-onyx/90 active:scale-95 disabled:opacity-50">
+              Preview & Print Bill
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Detail Modal */}
