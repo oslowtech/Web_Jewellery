@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ChevronDown, X, Trash2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useToast } from '../context/ToastContext.jsx';
-import { fetchAllOrdersForAdmin, updateOrderStatusAdmin } from '../services/orderService.js';
+import { fetchAllOrdersForAdmin, updateOrderStatusAdmin, saveManualInvoice } from '../services/orderService.js';
 import { formatPrice } from '../utils/format.js';
 import InvoiceModal from './InvoiceModal.jsx';
 
@@ -215,7 +215,7 @@ const AdminOrders = () => {
       setShowInvoice(true);
   };
 
-  const handlePrintManualBill = () => {
+  const handlePrintManualBill = async () => {
     const items = billItems.filter(i => i.desc).map(i => ({
       product_name: i.desc,
       quantity: Number(i.qty) || 0,
@@ -224,22 +224,48 @@ const AdminOrders = () => {
       total_price: (Number(i.discountPrice) || Number(i.price) || 0) * (Number(i.qty) || 0)
     }));
 
+    if (items.length === 0) return;
+
     let subtotal = 0, totalDiscount = 0;
     items.forEach(i => {
       subtotal += i.price_per_unit * i.quantity;
       totalDiscount += (i.price_per_unit - i.discount_price) * i.quantity;
     });
 
-    setInvoiceData({
-      customerName: billForm.customerName || "Walk-in Customer",
-      mobile: billForm.mobile || "N/A",
-      address: billForm.address || "Offline Sale",
-      invoiceNo: billForm.invoiceNo || `MAN-${Date.now().toString().slice(-6)}`,
-      date: billForm.date,
-      items, subtotal, totalDiscount,
-      grandTotal: subtotal - totalDiscount
-    });
-    setShowInvoice(true);
+    setIsUpdating(true);
+    try {
+      const saved = await saveManualInvoice({
+        customerName: billForm.customerName || "Walk-in Customer",
+        mobile: billForm.mobile || "N/A",
+        address: billForm.address || "Offline Sale",
+        invoiceNo: billForm.invoiceNo, // Passed as-is, empty triggers DB generation
+        date: billForm.date,
+        items, subtotal, totalDiscount,
+        grandTotal: subtotal - totalDiscount
+      });
+
+      setInvoiceData({
+        customerName: saved.customer_name,
+        mobile: saved.mobile,
+        address: saved.address,
+        invoiceNo: saved.invoice_number, // Auto-generated INV-XXXX from DB
+        date: saved.date,
+        items: saved.items,
+        subtotal: saved.subtotal,
+        totalDiscount: saved.total_discount,
+        grandTotal: saved.grand_total
+      });
+      setShowInvoice(true);
+      
+      // Clear the form fields upon success
+      setBillForm({ customerName: '', mobile: '', address: '', invoiceNo: '', date: new Date().toISOString().split('T')[0] });
+      setBillItems([{ desc: '', qty: 1, price: '', discountPrice: '' }]);
+      addToast('Manual bill saved and generated.');
+    } catch (err) {
+      addToast(`Failed to generate bill: ${err.message}`);
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
   const getStats = () => {
@@ -532,8 +558,8 @@ const AdminOrders = () => {
               </button>
             </div>
             
-            <button onClick={handlePrintManualBill} disabled={!billItems.some(i => i.desc)} className="w-full rounded-xl bg-onyx px-5 py-3.5 font-bold text-white mt-8 transition-transform hover:bg-onyx/90 active:scale-95 disabled:opacity-50">
-              Preview & Print Bill
+            <button onClick={handlePrintManualBill} disabled={!billItems.some(i => i.desc) || isUpdating} className="w-full rounded-xl bg-onyx px-5 py-3.5 font-bold text-white mt-8 transition-transform hover:bg-onyx/90 active:scale-95 disabled:opacity-50">
+              {isUpdating ? 'Saving & Generating...' : 'Save & Print Bill'}
             </button>
           </div>
         )}

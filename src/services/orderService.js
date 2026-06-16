@@ -703,3 +703,34 @@ export async function updateOrderStatusAdmin(orderId, newStatus, trackingId = nu
     throw err;
   }
 }
+
+/**
+ * Save a manual bill to the database
+ */
+export async function saveManualInvoice(invoiceData) {
+  requireSupabase();
+  
+  const payload = {
+    customer_name: invoiceData.customerName,
+    mobile: invoiceData.mobile,
+    address: invoiceData.address,
+    date: invoiceData.date,
+    items: invoiceData.items,
+    subtotal: invoiceData.subtotal,
+    total_discount: invoiceData.totalDiscount,
+    grand_total: invoiceData.grandTotal,
+  };
+  
+  // Optional: override the auto-generated number if manually supplied by admin
+  if (invoiceData.invoiceNo) {
+    payload.invoice_number = invoiceData.invoiceNo;
+  }
+
+  try {
+    const { data, error } = await supabase.from('manual_invoices').insert([payload]).select().single();
+    if (error) throw error;
+    return data;
+  } catch (err) {
+    throw new Error(err.message || 'Error saving manual invoice');
+  }
+}
