@@ -1,4 +1,5 @@
 import { MapPin, Phone, Mail, Globe, Diamond, X, Printer } from 'lucide-react';
+import logo from '../../logo.png';
 
 const InvoiceModal = ({ data, onClose }) => {
   // Always render exactly 10 rows to keep the invoice layout perfectly sized
@@ -47,7 +48,7 @@ const InvoiceModal = ({ data, onClose }) => {
             {/* Header Section */}
             <div className="flex items-center justify-between pb-2 border-b border-black">
               <div className="flex-1 text-center">
-                <div className="w-12 h-12 mx-auto rounded-full border border-black flex items-center justify-center font-serif text-3xl mb-1 pb-1">N</div>
+                <img src={logo} alt="Nagneshwari Logo" className="h-14 mx-auto mb-1 object-contain grayscale" />
                 <h1 className="font-serif text-xl tracking-widest leading-none font-bold">NAGNESHWARI</h1>
                 <div className="text-[8px] tracking-[0.2em] mt-1 uppercase flex items-center justify-center gap-1">
                   <span className="w-3 h-[1px] bg-black inline-block"></span>
