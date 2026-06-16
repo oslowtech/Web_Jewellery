@@ -18,7 +18,7 @@ const Shop = () => {
   });
 
   const { products, loading, meta } = useProducts();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const initialCategory = searchParams.get("category");
 
@@ -35,6 +35,25 @@ const Shop = () => {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [visibleCount, setVisibleCount] = useState(8);
   const debouncedQuery = useDebounce(filters.query, 300);
+
+  const categoriesList = useMemo(() => {
+    if (!products) return ["All"];
+    return ["All", ...new Set(products.map((p) => p.category))].filter(Boolean);
+  }, [products]);
+
+  const currentCategory = filters.categories.length === 1 ? filters.categories[0] : "All";
+
+  const handleCategoryClick = (category) => {
+    if (category === "All") {
+      setFilters((prev) => ({ ...prev, categories: [] }));
+      searchParams.delete("category");
+    } else {
+      setFilters((prev) => ({ ...prev, categories: [category] }));
+      searchParams.set("category", category);
+    }
+    setSearchParams(searchParams);
+    setVisibleCount(8);
+  };
 
   useEffect(() => {
     if (meta.maxPrice > 0) {
@@ -166,6 +185,22 @@ const Shop = () => {
         </div>
       </div>
 
+      <div className="flex gap-3 overflow-x-auto pb-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+        {categoriesList.map((category) => (
+          <button
+            key={category}
+            onClick={() => handleCategoryClick(category)}
+            className={`shrink-0 rounded-full px-5 py-2 text-sm font-medium transition-colors ${
+              currentCategory === category
+                ? "bg-onyx text-white shadow-md"
+                : "border border-white/70 bg-white/80 text-onyx hover:bg-stone/10"
+            }`}
+          >
+            {category}
+          </button>
+        ))}
+      </div>
+
       {filtered.length === 0 && !loading ? (
         <EmptyState
           title="No results"
@@ -173,7 +208,7 @@ const Shop = () => {
           action={
             <button
               className="rounded-full bg-onyx px-4 py-2 text-sm text-white"
-              onClick={() =>
+              onClick={() => {
                 setFilters((prev) => ({
                   ...prev,
                   query: "",
@@ -184,8 +219,10 @@ const Shop = () => {
                   newOnly: false,
                   priceRange: [meta.minPrice, meta.maxPrice],
                   sort: "",
-                }))
-              }
+                }));
+                searchParams.delete("category");
+                setSearchParams(searchParams);
+              }}
             >
               Clear filters
             </button>
