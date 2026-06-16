@@ -1,10 +1,11 @@
-﻿﻿import { useState, useEffect } from 'react';
+﻿﻿﻿﻿import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronDown, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useToast } from '../context/ToastContext.jsx';
 import { fetchAllOrdersForAdmin, updateOrderStatusAdmin } from '../services/orderService.js';
 import { formatPrice } from '../utils/format.js';
+import InvoiceModal from '../components/admin/InvoiceModal.jsx';
 
 const ORDER_STATUS_COLORS = {
   pending: 'bg-yellow-100 text-yellow-800 border-yellow-300',
@@ -65,6 +66,8 @@ const AdminOrders = () => {
   const [trackingId, setTrackingId] = useState('');
   const [trackingUrl, setTrackingUrl] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
+  const [showInvoice, setShowInvoice] = useState(false);
+  const [invoiceData, setInvoiceData] = useState(null);
 
   // Filters
   const [statusFilter, setStatusFilter] = useState(null);
@@ -175,6 +178,38 @@ const AdminOrders = () => {
     setStartDate('');
     setEndDate('');
     setSearchQuery('');
+  };
+
+  const handlePrintOnlineOrder = (order) => {
+      const items = order.order_items.map(i => ({
+          product_name: i.product_name,
+          quantity: i.quantity,
+          price_per_unit: Number(i.price_per_unit),
+          discount_price: Number(i.price_per_unit) - Number(i.discount_per_unit || 0),
+          total_price: Number(i.total_price)
+      }));
+
+      let subtotal = 0, totalDiscount = 0;
+      items.forEach(i => {
+         subtotal += i.price_per_unit * i.quantity;
+         totalDiscount += (i.price_per_unit - i.discount_price) * i.quantity;
+      });
+
+      if (order.shipping_charge > 0) { items.push({ product_name: "Shipping Charge", quantity: 1, price_per_unit: order.shipping_charge, discount_price: order.shipping_charge, total_price: order.shipping_charge }); subtotal += order.shipping_charge; }
+      if (order.cod_fee > 0) { items.push({ product_name: "COD Fee", quantity: 1, price_per_unit: order.cod_fee, discount_price: order.cod_fee, total_price: order.cod_fee }); subtotal += order.cod_fee; }
+      if (order.gift_wrap_fee > 0) { items.push({ product_name: "Gift Wrap", quantity: 1, price_per_unit: order.gift_wrap_fee, discount_price: order.gift_wrap_fee, total_price: order.gift_wrap_fee }); subtotal += order.gift_wrap_fee; }
+      if (order.discount_amount > totalDiscount) { totalDiscount = order.discount_amount; } // Apply flat coupon discount to totals if applicable
+
+      setInvoiceData({
+          customerName: getCustomerName(order),
+          mobile: order.billing_address?.phone || "N/A",
+          address: `${order.shipping_address?.street_address || ''}, ${order.shipping_address?.city || ''}`,
+          invoiceNo: order.order_number,
+          date: new Date(order.created_at).toISOString().split('T')[0],
+          items, subtotal, totalDiscount,
+          grandTotal: order.total_amount
+      });
+      setShowInvoice(true);
   };
 
   const getStats = () => {
@@ -473,6 +508,12 @@ const AdminOrders = () => {
                     className="text-rose hover:underline text-sm font-medium"
                   >
                     Update Status
+                  </button>
+                  <button
+                    onClick={() => handlePrintOnlineOrder(selectedOrder)}
+                    className="text-indigo-600 hover:underline text-sm font-medium ml-4"
+                  >
+                    Print Invoice
                   </button>
                 </div>
                 <div className="flex items-center gap-2">
@@ -791,6 +832,8 @@ const AdminOrders = () => {
           </div>
         </div>
       )}
+
+      {showInvoice && invoiceData && <InvoiceModal data={invoiceData} onClose={() => setShowInvoice(false)} />}
     </div>
   );
 };
