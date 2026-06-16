@@ -113,7 +113,7 @@ const InvoiceModal = ({ data, onClose }) => {
               <div className="flex-1 text-[8px] font-medium leading-tight">
                 <p className="font-bold mb-1 flex items-center gap-1 text-[9px]">◈ TERMS & CONDITIONS ◈</p>
                 <ol className="list-decimal pl-3 space-y-0.5">
-                  <li>Item prized above 500 are liable to 6months to 1yr of warranty.</li>
+                  <li>Item priced above 500 are liable to 6months to 1yr of warranty.</li>
                   <li>We are not responsible for any damage after delivery.</li>
                   <li>We do not entertain any warranty claim without bill.</li>
                 </ol>
