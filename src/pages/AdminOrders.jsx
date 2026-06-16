@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext.jsx';
 import { useToast } from '../context/ToastContext.jsx';
 import { fetchAllOrdersForAdmin, updateOrderStatusAdmin } from '../services/orderService.js';
 import { formatPrice } from '../utils/format.js';
-import InvoiceModal from '../components/admin/InvoiceModal.jsx';
+import InvoiceModal from './InvoiceModal.jsx';
 
 const ORDER_STATUS_COLORS = {
   pending: 'bg-yellow-100 text-yellow-800 border-yellow-300',
