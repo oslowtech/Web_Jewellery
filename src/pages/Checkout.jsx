@@ -131,8 +131,21 @@ const Checkout = () => {
         name: 'Nagneshwari Jewels',
         description: `Order #${order.order_number}`,
         order_id: razorpayOrder.order_id,
+        modal: {
+          ondismiss: function () {
+            // This prevents the UI from getting stuck on "Processing..."
+            // if the user simply closes the Razorpay modal.
+            setLoading(false);
+          },
+        },
         handler: async function (response) {
           try {
+            // Defensively check for an error object in the success handler response
+            if (response.error) {
+              addToast({ message: `Payment Failed: ${response.error.description || 'An unknown error occurred.'}`, type: 'error' });
+              setLoading(false);
+              return;
+            }
             // Add pre-flight validation to ensure all data is present before sending to backend
             if (!order || !order.id) {
               throw new Error("Local order ID is missing. Cannot verify payment.");
