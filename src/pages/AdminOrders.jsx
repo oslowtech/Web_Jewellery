@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext.jsx';
 import { useToast } from '../context/ToastContext.jsx';
 import { fetchAllOrdersForAdmin, updateOrderStatusAdmin, saveManualInvoice, fetchManualInvoices, checkCustomerDetailsByPhone, verifyManualInvoicePayment } from '../services/orderService.js';
 import { formatPrice } from '../utils/format.js';
+import { supabase } from '../lib/supabase.js';
 import InvoiceModal from './InvoiceModal.jsx';
 
 const ORDER_STATUS_COLORS = {
@@ -91,40 +92,35 @@ const AdminOrders = () => {
     }
     loadOrders();
     loadManualInvoices();
-  }, [isAdmin, authLoading, navigate]);
 
-  // Handle Razorpay Payment Link callback on page load
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const rzpPaymentLinkId = urlParams.get('razorpay_payment_link_id');
-    const rzpReferenceId = urlParams.get('razorpay_payment_link_reference_id'); // This is our manual_invoice ID
-    const rzpStatus = urlParams.get('razorpay_payment_link_status');
-
-    if (rzpPaymentLinkId && rzpReferenceId && rzpStatus === 'paid') {
-      // Clear URL parameters to prevent re-processing on refresh
-      navigate(window.location.pathname, { replace: true });
-
-      const processCallback = async () => {
-        addToast({ message: 'Verifying payment link...', type: 'info' });
-        try {
-          const updatedInvoice = await verifyManualInvoicePayment(rzpPaymentLinkId, rzpReferenceId);
-          if (updatedInvoice.payment_status === 'paid') {
-            addToast({ message: `Payment for invoice ${updatedInvoice.invoice_number} confirmed!`, type: 'success' });
-            // Update the local state for manual invoices
-            setManualInvoices(prev => prev.map(inv => inv.id === updatedInvoice.id ? updatedInvoice : inv));
-          } else {
-            addToast({ message: `Payment for invoice ${updatedInvoice.invoice_number} is ${updatedInvoice.payment_status}.`, type: 'warning' });
-          }
-        } catch (err) {
-          addToast({ message: `Failed to verify payment link: ${err.message}`, type: 'error' });
+    // Set up Supabase Realtime subscription for manual invoices.
+    // This listens for database changes (like a webhook updating a status)
+    // and updates the UI automatically without needing a page refresh.
+    const channel = supabase
+      .channel('manual-invoices-changes')
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'manual_invoices' },
+        (payload) => {
+          addToast({ message: `Invoice ${payload.new.invoice_number} status updated to ${payload.new.payment_status}!`, type: 'info' });
+          setManualInvoices(prevInvoices =>
+            prevInvoices.map(inv =>
+              inv.id === payload.new.id ? payload.new : inv
+            )
+          );
         }
-      };
-      processCallback();
-    } else if (rzpPaymentLinkId && rzpStatus && rzpStatus !== 'paid') {
-      navigate(window.location.pathname, { replace: true });
-      addToast({ message: `Payment link status: ${rzpStatus}. Please check manually.`, type: 'warning' });
-    }
-  }, [navigate, addToast]);
+      )
+      .subscribe((status, err) => {
+        if (err) {
+          console.error('Realtime subscription error:', err);
+        }
+      });
+
+    // Cleanup subscription on component unmount
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [isAdmin, authLoading, navigate, addToast]);
 
   // Apply filters whenever filter state changes
   useEffect(() => {
