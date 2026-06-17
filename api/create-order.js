@@ -24,7 +24,12 @@ export default async function handler(req, res) {
       key_secret: process.env.RAZORPAY_KEY_SECRET || process.env.VITE_RAZORPAY_KEY_SECRET,
     });
 
-    const { amount, receipt } = req.body;
+    let body = req.body;
+    if (typeof body === 'string') {
+      try { body = JSON.parse(body); } catch (e) {}
+    }
+
+    const { amount, receipt } = body || {};
 
     if (!amount || amount < 100) {
       return res.status(400).json({ error: 'Invalid amount. Minimum is 100 paise (₹1).' });

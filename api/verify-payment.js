@@ -26,9 +26,15 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { orderId, razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+    let body = req.body;
+    if (typeof body === 'string') {
+      try { body = JSON.parse(body); } catch (e) {}
+    }
+
+    const { orderId, razorpay_order_id, razorpay_payment_id, razorpay_signature } = body || {};
 
     if (!orderId || !razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+      console.error('Missing fields. Received body:', body);
       return res.status(400).json({ error: 'Missing payment verification fields' });
     }
 
