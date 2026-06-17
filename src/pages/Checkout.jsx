@@ -130,7 +130,7 @@ const Checkout = () => {
         currency: razorpayOrder.currency,
         name: 'Nagneshwari Jewels',
         description: `Order #${order.order_number}`,
-        order_id: razorpayOrder.order_id,
+        order_id: razorpayOrder.id,
         modal: {
           ondismiss: function () {
             // This prevents the UI from getting stuck on "Processing..."
