@@ -243,7 +243,12 @@ const AdminOrders = () => {
         }),
       });
 
-      const result = await response.json();
+      let result;
+      try {
+        result = await response.json();
+      } catch (jsonError) {
+        throw new Error(`Server responded with non-JSON or empty response. Status: ${response.status}, Error: ${jsonError.message}`);
+      }
 
       if (!response.ok || !result.success) {
         throw new Error(result.error || 'Refund failed on the server.');
