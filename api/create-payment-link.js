@@ -42,7 +42,7 @@ export default async function handler(req, res) {
       description,
       customer: { name: customerName, email: customerEmail, contact: customerPhone },
       notify: { sms: true, email: true },
-      notes: { receipt_id: receipt },
+      reference_id: receipt, // Use reference_id for our internal invoice ID
       callback_url: `https://www.nagneshwari.in/admin-orders`,
       callback_method: "get"
     };

@@ -767,3 +767,19 @@ export async function checkCustomerDetailsByPhone(phone) {
     return null;
   }
 }
+
+/**
+ * Verifies the status of a Razorpay Payment Link for a manual invoice.
+ */
+export async function verifyManualInvoicePayment(paymentLinkId, invoiceId) {
+  try {
+    const response = await fetch('/api/verify-payment-link', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ paymentLinkId, invoiceId }),
+    });
+    const result = await response.json();
+    if (!response.ok || !result.success) { throw new Error(result.error || 'Failed to verify payment link status.'); }
+    return result.invoice;
+  } catch (err) { console.error('Error verifying manual invoice payment:', err); throw err; }
+}

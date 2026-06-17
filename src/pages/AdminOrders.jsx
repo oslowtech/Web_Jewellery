@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ChevronDown, X, Trash2, RefreshCw, Copy } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useToast } from '../context/ToastContext.jsx';
-import { fetchAllOrdersForAdmin, updateOrderStatusAdmin, saveManualInvoice, fetchManualInvoices, checkCustomerDetailsByPhone } from '../services/orderService.js';
+import { fetchAllOrdersForAdmin, updateOrderStatusAdmin, saveManualInvoice, fetchManualInvoices, checkCustomerDetailsByPhone, verifyManualInvoicePayment } from '../services/orderService.js';
 import { formatPrice } from '../utils/format.js';
 import InvoiceModal from './InvoiceModal.jsx';
 
@@ -92,6 +92,39 @@ const AdminOrders = () => {
     loadOrders();
     loadManualInvoices();
   }, [isAdmin, authLoading, navigate]);
+
+  // Handle Razorpay Payment Link callback on page load
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const rzpPaymentLinkId = urlParams.get('razorpay_payment_link_id');
+    const rzpReferenceId = urlParams.get('razorpay_payment_link_reference_id'); // This is our manual_invoice ID
+    const rzpStatus = urlParams.get('razorpay_payment_link_status');
+
+    if (rzpPaymentLinkId && rzpReferenceId && rzpStatus === 'paid') {
+      // Clear URL parameters to prevent re-processing on refresh
+      navigate(window.location.pathname, { replace: true });
+
+      const processCallback = async () => {
+        addToast({ message: 'Verifying payment link...', type: 'info' });
+        try {
+          const updatedInvoice = await verifyManualInvoicePayment(rzpPaymentLinkId, rzpReferenceId);
+          if (updatedInvoice.payment_status === 'paid') {
+            addToast({ message: `Payment for invoice ${updatedInvoice.invoice_number} confirmed!`, type: 'success' });
+            // Update the local state for manual invoices
+            setManualInvoices(prev => prev.map(inv => inv.id === updatedInvoice.id ? updatedInvoice : inv));
+          } else {
+            addToast({ message: `Payment for invoice ${updatedInvoice.invoice_number} is ${updatedInvoice.payment_status}.`, type: 'warning' });
+          }
+        } catch (err) {
+          addToast({ message: `Failed to verify payment link: ${err.message}`, type: 'error' });
+        }
+      };
+      processCallback();
+    } else if (rzpPaymentLinkId && rzpStatus && rzpStatus !== 'paid') {
+      navigate(window.location.pathname, { replace: true });
+      addToast({ message: `Payment link status: ${rzpStatus}. Please check manually.`, type: 'warning' });
+    }
+  }, [navigate, addToast]);
 
   // Apply filters whenever filter state changes
   useEffect(() => {
@@ -389,6 +422,30 @@ const AdminOrders = () => {
         addToast({ message: `Failed to generate link: ${err.message}`, type: 'error' });
     } finally {
         setIsUpdating(false);
+    }
+  };
+
+  const handleCheckPaymentLinkStatus = async (invoice) => {
+    if (!invoice.razorpay_payment_link_id || !invoice.id) {
+      addToast({ message: 'No payment link found for this invoice.', type: 'error' });
+      return;
+    }
+
+    setIsUpdating(true);
+    try {
+      addToast({ message: 'Checking payment status...', type: 'info' });
+      const updatedInvoice = await verifyManualInvoicePayment(invoice.razorpay_payment_link_id, invoice.id);
+      if (updatedInvoice.payment_status === 'paid') {
+        addToast({ message: `Invoice ${updatedInvoice.invoice_number} is now Paid!`, type: 'success' });
+      } else {
+        addToast({ message: `Invoice ${updatedInvoice.invoice_number} status: ${updatedInvoice.payment_status}.`, type: 'warning' });
+      }
+      // Update the local state for manual invoices
+      setManualInvoices(prev => prev.map(inv => inv.id === updatedInvoice.id ? updatedInvoice : inv));
+    } catch (err) {
+      addToast({ message: `Failed to check payment status: ${err.message}`, type: 'error' });
+    } finally {
+      setIsUpdating(false);
     }
   };
 
@@ -725,6 +782,15 @@ const AdminOrders = () => {
                           'bg-gray-100 text-gray-800'
                         }`}>
                           {inv.payment_status || 'unpaid'}
+                        </span>
+                        {inv.payment_status === 'pending' && inv.razorpay_payment_link_id && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleCheckPaymentLinkStatus(inv); }}
+                            disabled={isUpdating}
+                            className="text-blue-600 hover:underline text-xs font-medium mt-1"
+                          >
+                            {isUpdating ? 'Checking...' : 'Check Status'}
+                          </button>
                         </span>
                         <button onClick={() => {
                           setInvoiceData({
