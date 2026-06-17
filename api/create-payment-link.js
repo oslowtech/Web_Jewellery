@@ -38,6 +38,7 @@ export default async function handler(req, res) {
     const options = {
       amount, // amount in the smallest currency unit
       currency: "INR",
+      upi_link: true, // This will generate a UPI QR code page
       accept_partial: false,
       description,
       customer: { name: customerName, email: customerEmail, contact: customerPhone },
