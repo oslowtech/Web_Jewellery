@@ -796,7 +796,7 @@ const AdminOrders = () => {
                           >
                             {isUpdating ? 'Checking...' : 'Check Status'}
                           </button>
-                        </span>
+                        )}
                         <button onClick={() => {
                           setInvoiceData({
                             customerName: inv.customer_name, mobile: inv.mobile, address: inv.address, invoiceNo: inv.invoice_number, 
