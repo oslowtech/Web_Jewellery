@@ -38,11 +38,11 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Missing payment verification fields' });
     }
 
-    const body = razorpay_order_id + '|' + razorpay_payment_id;
+    const signatureBody = razorpay_order_id + '|' + razorpay_payment_id;
 
     const expectedSignature = crypto
       .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET || process.env.VITE_RAZORPAY_KEY_SECRET)
-      .update(body.toString())
+      .update(signatureBody.toString())
       .digest('hex');
 
     if (expectedSignature !== razorpay_signature) {
