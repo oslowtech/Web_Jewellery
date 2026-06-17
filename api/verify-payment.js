@@ -33,14 +33,21 @@ export default async function handler(req, res) {
 
     const { orderId, orderIdRzp, paymentId, signature } = body || {};
 
+    const keySecret = process.env.RAZORPAY_KEY_SECRET || process.env.VITE_RAZORPAY_KEY_SECRET;
+    if (!keySecret) {
+      console.error('CRITICAL: RAZORPAY_KEY_SECRET is not set in environment variables.');
+      // Don't expose the exact variable name to the client
+      return res.status(500).json({ success: false, error: 'Server authentication configuration error.' });
+    }
+
     if (!orderId || !orderIdRzp || !paymentId || !signature) {
       console.error('Missing fields. Received body:', JSON.stringify(body, null, 2));
       
       const missing = [];
       if (!orderId) missing.push('orderId');
-      if (!orderIdRzp) missing.push('orderIdRzp');
-      if (!paymentId) missing.push('paymentId');
-      if (!signature) missing.push('signature');
+      if (!orderIdRzp) missing.push('orderIdRzp (from Razorpay)');
+      if (!paymentId) missing.push('paymentId (from Razorpay)');
+      if (!signature) missing.push('signature (from Razorpay)');
 
       return res.status(400).json({ error: `Missing payment verification fields: ${missing.join(', ')}` });
     }
@@ -48,7 +55,7 @@ export default async function handler(req, res) {
     const signatureBody = orderIdRzp + '|' + paymentId;
 
     const expectedSignature = crypto
-      .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET || process.env.VITE_RAZORPAY_KEY_SECRET)
+      .createHmac('sha256', keySecret)
       .update(signatureBody.toString())
       .digest('hex');
 
