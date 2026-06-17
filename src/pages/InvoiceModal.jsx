@@ -130,9 +130,15 @@ const InvoiceModal = ({ data, onClose }) => {
                 <div className="space-y-1 w-48 ml-auto font-medium">
                   <div className="flex justify-between"><span>SUBTOTAL</span> <span>: {Number(data.subtotal).toFixed(2)}</span></div>
                   <div className="flex justify-between"><span>TOTAL DISCOUNT</span> <span>: {Number(data.totalDiscount).toFixed(2)}</span></div>
-                  <div className="flex justify-between border border-black p-1 font-bold mt-1.5 bg-gray-100 uppercase"><span>GRAND TOTAL</span> <span>: {Number(data.grandTotal).toFixed(2)}</span></div>
+                  <div className="flex justify-between border-y border-black p-1 font-bold mt-1.5 bg-gray-100 uppercase"><span>GRAND TOTAL</span> <span>: {Number(data.grandTotal).toFixed(2)}</span></div>
+                  {data.paymentMethod && (
+                    <div className="flex justify-between border-b border-black p-1 text-[9px]">
+                        <span>PAYMENT</span>
+                        <span className="font-bold">{data.paymentMethod}</span>
+                    </div>
+                  )}
                 </div>
-                <div className="mt-6 border-t border-dashed border-gray-500 pt-1 text-center text-[8px] w-48 ml-auto font-bold text-gray-600">AUTHORIZED SIGNATURE</div>
+                <div className="mt-4 border-t border-dashed border-gray-500 pt-1 text-center text-[8px] w-48 ml-auto font-bold text-gray-600">AUTHORIZED SIGNATURE</div>
               </div>
             </div>
           </div>

@@ -51,9 +51,14 @@ const OrderHistory = () => {
     navigate(`/order-confirmation/${orderId}`);
   };
 
-  const handleCancelOrder = async (e, orderId) => {
+  const handleCancelOrder = async (e, order) => {
     e.stopPropagation();
-    if (!window.confirm("Are you sure you want to cancel this order? This action cannot be undone.")) {
+    const orderId = order.id;
+    let confirmMessage = "Are you sure you want to cancel this order? This action cannot be undone.";
+    if (order.payment_status === 'completed' && !['cancelled', 'refunded'].includes(order.status)) {
+      confirmMessage += "\n\nYour order was prepaid. A refund will be initiated by our team within 2-3 business days after review.";
+    }
+    if (!window.confirm(confirmMessage)) {
       return;
     }
     
@@ -215,9 +220,9 @@ const OrderHistory = () => {
                       Delivering to {order.shipping_address?.city}
                     </p>
                     <div className="flex gap-4 mt-2 justify-end">
-                      {['pending', 'payment_pending', 'paid', 'processing'].includes(order.status) && (
+                      {['pending', 'payment_pending', 'paid', 'processing', 'shipped'].includes(order.status) && (
                         <button
-                          onClick={(e) => handleCancelOrder(e, order.id)}
+                          onClick={(e) => handleCancelOrder(e, order)}
                           disabled={cancellingId === order.id}
                           className="text-red-600 hover:underline text-sm font-semibold disabled:opacity-50"
                         >

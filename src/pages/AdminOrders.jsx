@@ -1,6 +1,6 @@
-﻿﻿import { useState, useEffect } from 'react';
+﻿﻿﻿﻿import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronDown, X, Trash2 } from 'lucide-react';
+import { ChevronDown, X, Trash2, RefreshCw, Copy } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useToast } from '../context/ToastContext.jsx';
 import { fetchAllOrdersForAdmin, updateOrderStatusAdmin, saveManualInvoice, fetchManualInvoices, checkCustomerDetailsByPhone } from '../services/orderService.js';
@@ -68,6 +68,8 @@ const AdminOrders = () => {
   const [isUpdating, setIsUpdating] = useState(false);
   const [showInvoice, setShowInvoice] = useState(false);
   const [invoiceData, setInvoiceData] = useState(null);
+  const [showRazorpayModal, setShowRazorpayModal] = useState(false);
+  const [razorpayLinkData, setRazorpayLinkData] = useState(null);
   const [activeTab, setActiveTab] = useState('online');
   const [billForm, setBillForm] = useState({ customerName: '', mobile: '', address: '', invoiceNo: '', date: new Date().toISOString().split('T')[0] });
   const [billItems, setBillItems] = useState([{ desc: '', qty: 1, price: '', discountPrice: '' }]);
@@ -186,6 +188,47 @@ const AdminOrders = () => {
     }
   };
 
+  const handleRefund = async () => {
+    if (!selectedOrder || !selectedOrder.razorpay_payment_id) {
+      addToast({ message: 'Order has no payment ID to refund.', type: 'error' });
+      return;
+    }
+
+    if (!window.confirm(`Are you sure you want to refund ${formatPrice(selectedOrder.total_amount)} for order ${selectedOrder.order_number}? This action is irreversible via this panel.`)) {
+      return;
+    }
+
+    setIsUpdating(true);
+    try {
+      const response = await fetch('/api/refund-payment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          payment_id: selectedOrder.razorpay_payment_id,
+          amount: selectedOrder.total_amount,
+          order_id: selectedOrder.id,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || 'Refund failed on the server.');
+      }
+
+      addToast({ message: 'Refund processed successfully via Razorpay!', type: 'success' });
+      
+      // Update local state and close modal
+      const updatedOrders = orders.map(o => (o.id === selectedOrder.id ? { ...o, status: 'refunded', payment_status: 'refunded' } : o));
+      setOrders(updatedOrders);
+      setShowDetailModal(false);
+    } catch (err) {
+      addToast({ message: `Refund failed: ${err.message}`, type: 'error' });
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
   const clearFilters = () => {
     setStatusFilter(null);
     setPaymentStatusFilter(null);
@@ -220,13 +263,14 @@ const AdminOrders = () => {
           address: `${order.shipping_address?.street_address || ''}, ${order.shipping_address?.city || ''}`,
           invoiceNo: order.order_number,
           date: new Date(order.created_at).toISOString().split('T')[0],
-          items, subtotal, totalDiscount,
+          items, subtotal, totalDiscount, 
+          paymentMethod: order.cod_fee > 0 ? 'COD' : 'Prepaid',
           grandTotal: order.total_amount
       });
       setShowInvoice(true);
   };
 
-  const handlePrintManualBill = async () => {
+  const handleSaveAndPrintManualBill = async (options = {}) => {
     const items = billItems.filter(i => i.desc).map(i => ({
       product_name: i.desc,
       quantity: Number(i.qty) || 0,
@@ -252,7 +296,8 @@ const AdminOrders = () => {
         invoiceNo: billForm.invoiceNo, // Passed as-is, empty triggers DB generation
         date: billForm.date,
         items, subtotal, totalDiscount,
-        grandTotal: subtotal - totalDiscount
+        grandTotal: subtotal - totalDiscount,
+        paymentStatus: options.paymentStatus || 'paid',
       });
 
       setInvoiceData({
@@ -264,7 +309,8 @@ const AdminOrders = () => {
         items: saved.items,
         subtotal: saved.subtotal,
         totalDiscount: saved.total_discount,
-        grandTotal: saved.grand_total
+        grandTotal: saved.grand_total,
+        paymentMethod: options.paymentStatus === 'paid' ? 'Cash/Other' : 'Unpaid',
       });
       setShowInvoice(true);
       
@@ -277,6 +323,72 @@ const AdminOrders = () => {
       addToast(`Failed to generate bill: ${err.message}`);
     } finally {
       setIsUpdating(false);
+    }
+  };
+
+  const handleGenerateRazorpayLink = async () => {
+    const items = billItems.filter(i => i.desc).map(i => ({
+        product_name: i.desc,
+        quantity: Number(i.qty) || 0,
+        price_per_unit: Number(i.price) || 0,
+        discount_price: Number(i.discountPrice) || 0,
+        total_price: (Number(i.discountPrice) || Number(i.price) || 0) * (Number(i.qty) || 0)
+    }));
+
+    if (items.length === 0) {
+        addToast({ message: 'Please add at least one item.', type: 'error' });
+        return;
+    }
+
+    let subtotal = 0, totalDiscount = 0;
+    items.forEach(i => {
+        subtotal += i.price_per_unit * i.quantity;
+        totalDiscount += (i.price_per_unit - i.discount_price) * i.quantity;
+    });
+    const grandTotal = subtotal - totalDiscount;
+
+    if (grandTotal <= 0) {
+        addToast({ message: 'Total amount must be greater than zero.', type: 'error' });
+        return;
+    }
+
+    setIsUpdating(true);
+    try {
+        const pendingInvoice = await saveManualInvoice({
+            customerName: billForm.customerName || "Walk-in Customer",
+            mobile: billForm.mobile,
+            address: billForm.address,
+            invoiceNo: billForm.invoiceNo,
+            date: billForm.date,
+            items, subtotal, totalDiscount, grandTotal,
+            paymentStatus: 'pending',
+        });
+
+        const rzpResponse = await fetch('/api/create-payment-link', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                amount: Math.round(grandTotal * 100),
+                description: `Payment for Invoice #${pendingInvoice.invoice_number}`,
+                customerName: pendingInvoice.customer_name,
+                customerPhone: pendingInvoice.mobile,
+                receipt: pendingInvoice.id,
+            }),
+        });
+
+        const rzpLink = await rzpResponse.json();
+        if (!rzpResponse.ok) throw new Error(rzpLink.error || 'Failed to create Razorpay link.');
+
+        await saveManualInvoice({ id: pendingInvoice.id, razorpayPaymentLinkId: rzpLink.id, razorpayPaymentLinkUrl: rzpLink.short_url });
+        setRazorpayLinkData({ url: rzpLink.short_url, invoiceNumber: pendingInvoice.invoice_number });
+        setShowRazorpayModal(true);
+        setBillForm({ customerName: '', mobile: '', address: '', invoiceNo: '', date: new Date().toISOString().split('T')[0] });
+        setBillItems([{ desc: '', qty: 1, price: '', discountPrice: '' }]);
+        loadManualInvoices();
+    } catch (err) {
+        addToast({ message: `Failed to generate link: ${err.message}`, type: 'error' });
+    } finally {
+        setIsUpdating(false);
     }
   };
 
@@ -600,11 +712,20 @@ const AdminOrders = () => {
                         <p className="text-sm text-gray-600">{inv.customer_name} ({inv.mobile})</p>
                         <p className="text-xs text-gray-500 mt-0.5">{new Date(inv.created_at).toLocaleDateString()}</p>
                       </div>
-                      <div className="text-right flex flex-col items-end">
-                        <p className="font-bold text-onyx mb-2">{formatPrice(Number(inv.grand_total))}</p>
+                      <div className="text-right flex flex-col items-end gap-2">
+                        <p className="font-bold text-onyx">{formatPrice(Number(inv.grand_total))}</p>
+                        <span className={`inline-block px-2 py-1 rounded text-xs font-medium ${
+                          inv.payment_status === 'paid' ? 'bg-green-100 text-green-800' :
+                          inv.payment_status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                          'bg-gray-100 text-gray-800'
+                        }`}>
+                          {inv.payment_status || 'unpaid'}
+                        </span>
                         <button onClick={() => {
                           setInvoiceData({
-                            customerName: inv.customer_name, mobile: inv.mobile, address: inv.address, invoiceNo: inv.invoice_number, date: inv.date, items: inv.items, subtotal: inv.subtotal, totalDiscount: inv.total_discount, grandTotal: inv.grand_total
+                            customerName: inv.customer_name, mobile: inv.mobile, address: inv.address, invoiceNo: inv.invoice_number, 
+                            date: inv.date, items: inv.items, subtotal: inv.subtotal, totalDiscount: inv.total_discount, 
+                            grandTotal: inv.grand_total, paymentMethod: inv.payment_status === 'paid' ? (inv.razorpay_payment_link_id ? 'Razorpay' : 'Cash/Other') : 'Pending'
                           });
                           setShowInvoice(true);
                         }} className="text-sm font-medium text-rose hover:underline">View / Print</button>
@@ -647,6 +768,16 @@ const AdminOrders = () => {
               <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="font-semibold text-onyx">Order Status</h3>
+                <div className="flex items-center gap-4">
+                  {selectedOrder.payment_status === 'completed' && !['refunded', 'cancelled'].includes(selectedOrder.status) && (
+                    <button
+                      onClick={handleRefund}
+                      className="text-red-600 hover:underline text-sm font-medium flex items-center gap-1"
+                      disabled={isUpdating}
+                    >
+                      <RefreshCw size={14} /> {isUpdating ? 'Refunding...' : 'Process Refund'}
+                    </button>
+                  )}
                   <button
                     onClick={() => {
                       setNewStatus(selectedOrder.status);
@@ -660,10 +791,11 @@ const AdminOrders = () => {
                   </button>
                   <button
                     onClick={() => handlePrintOnlineOrder(selectedOrder)}
-                    className="text-indigo-600 hover:underline text-sm font-medium ml-4"
+                    className="text-indigo-600 hover:underline text-sm font-medium"
                   >
                     Print Invoice
                   </button>
+                </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <span
@@ -983,6 +1115,31 @@ const AdminOrders = () => {
       )}
 
       {showInvoice && invoiceData && <InvoiceModal data={invoiceData} onClose={() => setShowInvoice(false)} />}
+
+      {showRazorpayModal && razorpayLinkData && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-lg max-w-md w-full p-6 text-center">
+                <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-xl font-bold text-onyx">Share Payment Link</h2>
+                    <button onClick={() => setShowRazorpayModal(false)} className="text-gray-500 hover:text-gray-700"><X size={24} /></button>
+                </div>
+                <p className="text-sm text-gray-600 mb-4">Share this QR code or link with the customer to accept payment for invoice <span className="font-bold">{razorpayLinkData.invoiceNumber}</span>.</p>
+                <img src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(razorpayLinkData.url)}`} alt="Razorpay QR Code" className="w-48 h-48 mx-auto rounded-lg mb-4 p-2 bg-white shadow-md border" />
+                <div className="bg-gray-100 p-2 rounded-lg text-sm font-mono break-all mb-4">
+                    {razorpayLinkData.url}
+                </div>
+                <button
+                    onClick={() => {
+                        navigator.clipboard.writeText(razorpayLinkData.url);
+                        addToast({ message: 'Link copied to clipboard!', type: 'success' });
+                    }}
+                    className="w-full bg-rose text-white py-3 rounded-lg font-semibold hover:bg-opacity-90 flex items-center justify-center gap-2"
+                >
+                    <Copy size={16} /> Copy Link
+                </button>
+            </div>
+        </div>
+      )}
     </div>
   );
 };

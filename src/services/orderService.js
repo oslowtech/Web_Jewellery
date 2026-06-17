@@ -709,7 +709,7 @@ export async function updateOrderStatusAdmin(orderId, newStatus, trackingId = nu
  */
 export async function saveManualInvoice(invoiceData) {
   requireSupabase();
-  
+
   const payload = {
     customer_name: invoiceData.customerName,
     mobile: invoiceData.mobile,
@@ -719,15 +719,19 @@ export async function saveManualInvoice(invoiceData) {
     subtotal: invoiceData.subtotal,
     total_discount: invoiceData.totalDiscount,
     grand_total: invoiceData.grandTotal,
+    payment_status: invoiceData.paymentStatus || 'unpaid',
+    razorpay_payment_link_id: invoiceData.razorpayPaymentLinkId,
+    razorpay_payment_link_url: invoiceData.razorpayPaymentLinkUrl,
   };
-  
+
   // Optional: override the auto-generated number if manually supplied by admin
   if (invoiceData.invoiceNo) {
     payload.invoice_number = invoiceData.invoiceNo;
   }
 
   try {
-    const { data, error } = await supabase.from('manual_invoices').insert([payload]).select().single();
+    const query = invoiceData.id ? supabase.from('manual_invoices').update(payload).eq('id', invoiceData.id) : supabase.from('manual_invoices').insert([payload]);
+    const { data, error } = await query.select().single();
     if (error) throw error;
     return data;
   } catch (err) {

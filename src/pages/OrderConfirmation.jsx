@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { CheckCircle2, Package, ReceiptText } from 'lucide-react';
+import { CheckCircle2, Package, ReceiptText, Printer } from 'lucide-react';
 import { getOrderById } from '../services/orderService.js';
 import { formatPrice } from '../utils/format.js';
 import { getLuckyDrawEntryByOrder, verifyAndUseCode } from '../services/luckyDrawService.js';
 import PageLoader from '../components/common/PageLoader.jsx';
+import InvoiceModal from './InvoiceModal.jsx';
 
 const OrderConfirmation = () => {
   const { orderId } = useParams();
@@ -12,6 +13,8 @@ const OrderConfirmation = () => {
   const [luckyDraw, setLuckyDraw] = useState(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
+  const [showInvoice, setShowInvoice] = useState(false);
+  const [invoiceData, setInvoiceData] = useState(null);
   const [redeeming, setRedeeming] = useState(false);
 
   useEffect(() => {
@@ -46,6 +49,41 @@ const OrderConfirmation = () => {
     } finally {
       setRedeeming(false);
     }
+  };
+
+  const handlePrintInvoice = () => {
+    if (!order) return;
+
+    const items = order.order_items.map(i => ({
+        product_name: i.product_name,
+        quantity: i.quantity,
+        price_per_unit: Number(i.price_per_unit),
+        discount_price: Number(i.price_per_unit) - Number(i.discount_per_unit || 0),
+        total_price: Number(i.total_price)
+    }));
+
+    let subtotal = 0, totalDiscount = 0;
+    items.forEach(i => {
+       subtotal += i.price_per_unit * i.quantity;
+       totalDiscount += (i.price_per_unit - i.discount_price) * i.quantity;
+    });
+
+    if (order.shipping_charge > 0) { items.push({ product_name: "Shipping Charge", quantity: 1, price_per_unit: order.shipping_charge, discount_price: order.shipping_charge, total_price: order.shipping_charge }); subtotal += order.shipping_charge; }
+    if (order.cod_fee > 0) { items.push({ product_name: "COD Fee", quantity: 1, price_per_unit: order.cod_fee, discount_price: order.cod_fee, total_price: order.cod_fee }); subtotal += order.cod_fee; }
+    if (order.gift_wrap_fee > 0) { items.push({ product_name: "Gift Wrap", quantity: 1, price_per_unit: order.gift_wrap_fee, discount_price: order.gift_wrap_fee, total_price: order.gift_wrap_fee }); subtotal += order.gift_wrap_fee; }
+    if (order.discount_amount > totalDiscount) { totalDiscount = order.discount_amount; }
+
+    setInvoiceData({
+        customerName: order.billing_address?.full_name || 'N/A',
+        mobile: order.billing_address?.phone || "N/A",
+        address: `${order.shipping_address?.street_address || ''}, ${order.shipping_address?.city || ''}`,
+        invoiceNo: order.order_number,
+        date: new Date(order.created_at).toISOString().split('T')[0],
+        items, subtotal, totalDiscount,
+        grandTotal: order.total_amount,
+        paymentMethod: order.cod_fee > 0 ? 'COD' : 'Prepaid',
+    });
+    setShowInvoice(true);
   };
 
   if (loading) return <PageLoader />;
@@ -201,8 +239,8 @@ const OrderConfirmation = () => {
 
         <div className="mt-6 flex flex-col gap-3 sm:flex-row print:hidden">
           {order.payment_status === 'completed' && (
-            <button onClick={() => window.print()} className="inline-flex justify-center rounded-lg bg-onyx px-5 py-3 text-sm font-semibold text-white">
-              Download Invoice
+            <button onClick={handlePrintInvoice} className="inline-flex items-center justify-center gap-2 rounded-lg bg-onyx px-5 py-3 text-sm font-semibold text-white">
+              <Printer size={16} /> Download Invoice
             </button>
           )}
           <Link to="/orders" className="inline-flex justify-center rounded-lg bg-onyx px-5 py-3 text-sm font-semibold text-white">
@@ -213,6 +251,8 @@ const OrderConfirmation = () => {
           </Link>
         </div>
       </div>
+
+      {showInvoice && invoiceData && <InvoiceModal data={invoiceData} onClose={() => setShowInvoice(false)} />}
     </div>
   );
 };
