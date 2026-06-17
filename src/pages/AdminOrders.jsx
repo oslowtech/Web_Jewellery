@@ -787,7 +787,7 @@ const AdminOrders = () => {
                           'bg-gray-100 text-gray-800'
                         }`}>
                           {inv.payment_status || 'unpaid'}
-                        </span>
+                        </span> {/* This closing span was extra and caused a syntax error */}
                         {inv.payment_status === 'pending' && inv.razorpay_payment_link_id && (
                           <button
                             onClick={(e) => { e.stopPropagation(); handleCheckPaymentLinkStatus(inv); }}
