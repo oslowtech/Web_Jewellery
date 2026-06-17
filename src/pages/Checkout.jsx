@@ -138,6 +138,13 @@ const Checkout = () => {
             setLoading(false);
           },
         },
+        events: {
+          'payment.failed': function (response) {
+            const errorMessage = `Payment Failed: ${response.error.description} (Reason: ${response.error.reason})`;
+            addToast({ message: errorMessage, type: 'error' });
+            setLoading(false);
+          },
+        },
         handler: async function (response) {
           try {
             // Defensively check for an error object in the success handler response
