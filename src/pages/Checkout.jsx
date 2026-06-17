@@ -133,6 +133,15 @@ const Checkout = () => {
         order_id: razorpayOrder.order_id,
         handler: async function (response) {
           try {
+            // Add pre-flight validation to ensure all data is present before sending to backend
+            if (!order || !order.id) {
+              throw new Error("Local order ID is missing. Cannot verify payment.");
+            }
+            if (!response || !response.razorpay_payment_id || !response.razorpay_order_id || !response.razorpay_signature) {
+              console.error("Invalid Razorpay response:", response);
+              throw new Error("Incomplete Razorpay response. Cannot verify payment.");
+            }
+
             // 3. Verify Payment on our backend
             setLoading(true);
             const verificationResponse = await fetch('/api/verify-payment', {

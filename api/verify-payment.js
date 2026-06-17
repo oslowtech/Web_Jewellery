@@ -34,8 +34,15 @@ export default async function handler(req, res) {
     const { orderId, razorpay_order_id, razorpay_payment_id, razorpay_signature } = body || {};
 
     if (!orderId || !razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
-      console.error('Missing fields. Received body:', body);
-      return res.status(400).json({ error: 'Missing payment verification fields' });
+      console.error('Missing fields. Received body:', JSON.stringify(body, null, 2));
+      
+      const missing = [];
+      if (!orderId) missing.push('orderId');
+      if (!razorpay_order_id) missing.push('razorpay_order_id');
+      if (!razorpay_payment_id) missing.push('razorpay_payment_id');
+      if (!razorpay_signature) missing.push('razorpay_signature');
+
+      return res.status(400).json({ error: `Missing payment verification fields: ${missing.join(', ')}` });
     }
 
     const signatureBody = razorpay_order_id + '|' + razorpay_payment_id;
