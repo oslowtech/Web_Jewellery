@@ -1,7 +1,7 @@
 import Razorpay from 'razorpay';
 
 export default async function handler(req, res) {
-  // Set CORS headers
+  // CORS headers
   res.setHeader('Access-Control-Allow-Credentials', true);
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST,OPTIONS');
@@ -29,32 +29,32 @@ export default async function handler(req, res) {
       try { body = JSON.parse(body); } catch (e) {}
     }
 
-    const { amount, description, customerName, customerPhone, invoiceId } = body || {};
+    const { amount, description, invoiceId } = body || {};
 
     if (!amount || amount < 100) {
       return res.status(400).json({ error: 'Invalid amount. Minimum is 100 paise (₹1).' });
     }
     if (!invoiceId) {
-      return res.status(400).json({ error: 'Invoice ID is required.' });
+      return res.status(400).json({ error: 'Invoice ID is required to generate QR code.' });
     }
 
     const options = {
-      amount, // amount in the smallest currency unit (paise)
-      currency: "INR",
-      accept_partial: false,
-      description: description || `Payment for Invoice`,
-      customer: { name: customerName || "Customer", contact: customerPhone || undefined },
-      notify: { sms: Boolean(customerPhone), email: false },
-      reference_id: invoiceId.toString(), // CRUCIAL: Used to map the webhook back to this exact invoice
-      callback_url: `https://www.nagneshwari.in/admin-orders`,
-      callback_method: "get"
+      type: 'upi_qr',
+      name: `Nagneshwari - Inv #${description}`,
+      usage: 'single_use',
+      fixed_amount: true,
+      payment_amount: amount,
+      description: `Payment for Invoice #${description}`,
+      notes: {
+        invoice_id: invoiceId, // Crucial for webhook mapping
+      },
     };
 
-    const paymentLink = await razorpay.paymentLink.create(options);
+    const qrCode = await razorpay.qrCode.create(options);
 
-    res.status(200).json(paymentLink);
+    res.status(200).json(qrCode);
   } catch (error) {
-    console.error('Razorpay Create Payment Link Error:', error);
+    console.error('Razorpay Create QR Code Error:', error);
     res.status(500).json({ error: error.message || 'Internal Server Error' });
   }
 }

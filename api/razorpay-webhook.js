@@ -56,14 +56,13 @@ export default async function handler(req, res) {
       const invoiceId = paymentLink.reference_id; // This is our manual_invoice.id
       const razorpayPaymentId = payment.id;
 
-      console.log(`INFO: Payment link paid. Invoice ID (reference_id): ${invoiceId}`);
+      console.log(`INFO: Event 'payment_link.paid'. Invoice ID (reference_id): ${invoiceId}`);
 
       if (!invoiceId) {
         console.warn('Webhook received for payment_link.paid but no reference_id (invoiceId) found.');
         return res.status(200).json({ status: 'ignored', reason: 'No reference_id' });
       }
 
-      // 3. Update the manual_invoices table in Supabase
       console.log(`INFO: Updating manual_invoices table for ID: ${invoiceId}`);
       const { data, error } = await supabase
         .from('manual_invoices')
@@ -77,12 +76,45 @@ export default async function handler(req, res) {
         .single();
 
       if (error) {
-        console.error('ERROR: Supabase update error:', error);
+        console.error('ERROR: Supabase update error for payment_link.paid:', error);
         throw error;
       }
-      console.log(`SUCCESS: Successfully updated invoice ${data.invoice_number} to paid.`);
+      console.log(`SUCCESS: Updated invoice ${data.invoice_number} to paid via payment link.`);
+
+    } else if (event.event === 'qr_code.credited') {
+      const qrCode = event.payload.qr_code.entity;
+      const payment = event.payload.payment.entity;
+
+      const invoiceId = qrCode.notes?.invoice_id;
+      const razorpayPaymentId = payment.id;
+
+      console.log(`INFO: Event 'qr_code.credited'. Invoice ID (from notes): ${invoiceId}`);
+
+      if (!invoiceId) {
+        console.warn('Webhook received for qr_code.credited but no invoice_id found in notes.');
+        return res.status(200).json({ status: 'ignored', reason: 'No invoice_id in notes' });
+      }
+
+      console.log(`INFO: Updating manual_invoices table for ID: ${invoiceId}`);
+      const { data, error } = await supabase
+        .from('manual_invoices')
+        .update({
+          payment_status: 'paid',
+          razorpay_payment_id: razorpayPaymentId,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', invoiceId)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('ERROR: Supabase update error for qr_code.credited:', error);
+        throw error;
+      }
+      console.log(`SUCCESS: Updated invoice ${data.invoice_number} to paid via QR code.`);
+
     } else {
-      console.log(`INFO: Received event '${event.event}', which is not 'payment_link.paid'. Ignoring.`);
+      console.log(`INFO: Received event '${event.event}', which is not handled. Ignoring.`);
     }
 
     res.status(200).json({ status: 'received' });
