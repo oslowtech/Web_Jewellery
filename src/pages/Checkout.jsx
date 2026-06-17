@@ -132,38 +132,44 @@ const Checkout = () => {
         description: `Order #${order.order_number}`,
         order_id: razorpayOrder.order_id,
         handler: async function (response) {
-          // 3. Verify Payment on our backend
-          setLoading(true);
-          const verificationResponse = await fetch('/api/verify-payment', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              ...response,
-              orderId: order.id, // Our internal DB order ID
-            }),
-          });
-
-          let verificationResult;
           try {
-            verificationResult = await verificationResponse.json();
-          } catch (e) {
-            throw new Error(`API Error (${verificationResponse.status}): Could not parse verification response.`);
-          }
+            // 3. Verify Payment on our backend
+            setLoading(true);
+            const verificationResponse = await fetch('/api/verify-payment', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                ...response,
+                orderId: order.id, // Our internal DB order ID
+              }),
+            });
 
-          if (!verificationResponse.ok || !verificationResult.success) {
-            throw new Error(verificationResult?.error || 'Payment verification failed.');
-          }
+            let verificationResult;
+            try {
+              verificationResult = await verificationResponse.json();
+            } catch (e) {
+              throw new Error(`API Error (${verificationResponse.status}): Could not parse verification response.`);
+            }
 
-          // 4. Handle Success
-          let luckyCode = null;
-          if (finalOrderAmount >= 3000 && isEligibleForDraw) {
-            const drawEntry = await createLuckyDrawEntry(order.id, finalOrderAmount, user.id, checkoutState.billingAddress.full_name, checkoutState.billingAddress.phone);
-            if (drawEntry) luckyCode = drawEntry.code;
-          }
+            if (!verificationResponse.ok || !verificationResult.success) {
+              throw new Error(verificationResult?.error || 'Payment verification failed.');
+            }
 
-          clearCart();
-          addToast({ message: 'Payment successful! Order placed.', type: 'success' });
-          navigate(`/order-confirmation/${order.id}`);
+            // 4. Handle Success
+            let luckyCode = null;
+            if (finalOrderAmount >= 3000 && isEligibleForDraw) {
+              const drawEntry = await createLuckyDrawEntry(order.id, finalOrderAmount, user.id, checkoutState.billingAddress.full_name, checkoutState.billingAddress.phone);
+              if (drawEntry) luckyCode = drawEntry.code;
+            }
+
+            clearCart();
+            addToast({ message: 'Payment successful! Order placed.', type: 'success' });
+            navigate(`/order-confirmation/${order.id}`);
+          } catch (err) {
+            setError(err.message || 'An error occurred during payment verification.');
+            addToast({ message: err.message || 'Payment verification failed.', type: 'error' });
+            setLoading(false);
+          }
         },
         prefill: {
           name: checkoutState.billingAddress.full_name,
