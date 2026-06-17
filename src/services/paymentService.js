@@ -1,6 +1,6 @@
 import { supabase } from '../lib/supabase.js';
 
-const WHATSAPP_PHONE = '917307058932';
+const WHATSAPP_PHONE = import.meta.env.VITE_WHATSAPP_NUMBER || '917007810114';
 
 /**
  * Get payment methods (for UI selection)
