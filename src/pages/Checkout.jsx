@@ -109,12 +109,19 @@ const Checkout = () => {
         }),
       });
 
+      let razorpayOrder;
       if (!razorpayOrderResponse.ok) {
-        const err = await razorpayOrderResponse.json();
-        throw new Error(err.error || 'Failed to create Razorpay order.');
+        let errMessage = 'Failed to create Razorpay order.';
+        try {
+          const err = await razorpayOrderResponse.json();
+          errMessage = err.error || errMessage;
+        } catch (e) {
+          errMessage = `API Error (${razorpayOrderResponse.status}): Please test via the live Vercel link or using 'vercel dev'.`;
+        }
+        throw new Error(errMessage);
       }
 
-      const razorpayOrder = await razorpayOrderResponse.json();
+      razorpayOrder = await razorpayOrderResponse.json();
 
       // 2. Open Razorpay Checkout Modal
       const options = {
@@ -136,9 +143,15 @@ const Checkout = () => {
             }),
           });
 
-          const verificationResult = await verificationResponse.json();
+          let verificationResult;
+          try {
+            verificationResult = await verificationResponse.json();
+          } catch (e) {
+            throw new Error(`API Error (${verificationResponse.status}): Could not parse verification response.`);
+          }
+
           if (!verificationResponse.ok || !verificationResult.success) {
-            throw new Error(verificationResult.error || 'Payment verification failed.');
+            throw new Error(verificationResult?.error || 'Payment verification failed.');
           }
 
           // 4. Handle Success
