@@ -1,26 +1,18 @@
 import Razorpay from 'razorpay';
-import cors from 'cors';
-
-// Initialize CORS middleware
-const corsMiddleware = cors({
-  origin: '*', // In production, restrict this to your frontend's domain
-  methods: ['POST', 'OPTIONS'],
-});
-
-// Helper to run middleware
-const runMiddleware = (req, res, fn) => {
-  return new Promise((resolve, reject) => {
-    fn(req, res, (result) => {
-      if (result instanceof Error) {
-        return reject(result);
-      }
-      return resolve(result);
-    });
-  });
-};
 
 export default async function handler(req, res) {
-  await runMiddleware(req, res, corsMiddleware);
+  // Set CORS headers natively for Vercel
+  res.setHeader('Access-Control-Allow-Credentials', true);
+  res.setHeader('Access-Control-Allow-Origin', '*'); // Or your specific domain: https://nagneshwari.in
+  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
+  res.setHeader(
+    'Access-Control-Allow-Headers',
+    'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization'
+  );
+
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
 
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method Not Allowed' });
