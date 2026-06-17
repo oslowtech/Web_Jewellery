@@ -7,7 +7,7 @@ import { useOrder } from '../context/OrderContext.jsx';
 import { useToast } from '../context/ToastContext.jsx';
 import { fetchAddresses } from '../services/addressService.js';
 import { createOrder, validateOrderData } from '../services/orderService.js';
-import { PAYMENT_METHODS, finalizeManualOrder } from '../services/paymentService.js';
+import { PAYMENT_METHODS, finalizeManualOrder, loadRazorpaySDK } from '../services/paymentService.js';
 import { calculateShipping } from '../utils/shipping.js';
 import { formatPrice } from '../utils/format.js';
 import { createLuckyDrawEntry, checkUserEligibility } from '../services/luckyDrawService.js';
@@ -90,6 +90,92 @@ const Checkout = () => {
     checkoutActions.setGifting(giftData);
   };
 
+  const handlePrepaidOrder = async (order, finalOrderAmount) => {
+    const res = await loadRazorpaySDK();
+    if (!res) {
+      addToast({ message: 'Razorpay SDK failed to load. Are you online?', type: 'error' });
+      setLoading(false);
+      return;
+    }
+
+    try {
+      // 1. Create a Razorpay Order from our backend
+      const razorpayOrderResponse = await fetch('/api/create-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount: Math.round(finalOrderAmount * 100), // Amount in paise
+          receipt: order.order_number,
+        }),
+      });
+
+      if (!razorpayOrderResponse.ok) {
+        const err = await razorpayOrderResponse.json();
+        throw new Error(err.error || 'Failed to create Razorpay order.');
+      }
+
+      const razorpayOrder = await razorpayOrderResponse.json();
+
+      // 2. Open Razorpay Checkout Modal
+      const options = {
+        key: import.meta.env.VITE_RAZORPAY_KEY_ID,
+        amount: razorpayOrder.amount,
+        currency: razorpayOrder.currency,
+        name: 'Nagneshwari Jewels',
+        description: `Order #${order.order_number}`,
+        order_id: razorpayOrder.order_id,
+        handler: async function (response) {
+          // 3. Verify Payment on our backend
+          setLoading(true);
+          const verificationResponse = await fetch('/api/verify-payment', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              ...response,
+              orderId: order.id, // Our internal DB order ID
+            }),
+          });
+
+          const verificationResult = await verificationResponse.json();
+          if (!verificationResponse.ok || !verificationResult.success) {
+            throw new Error(verificationResult.error || 'Payment verification failed.');
+          }
+
+          // 4. Handle Success
+          let luckyCode = null;
+          if (finalOrderAmount >= 3000 && isEligibleForDraw) {
+            const drawEntry = await createLuckyDrawEntry(order.id, finalOrderAmount, user.id, checkoutState.billingAddress.full_name, checkoutState.billingAddress.phone);
+            if (drawEntry) luckyCode = drawEntry.code;
+          }
+
+          clearCart();
+          addToast({ message: 'Payment successful! Order placed.', type: 'success' });
+          navigate(`/order-confirmation/${order.id}`);
+        },
+        prefill: {
+          name: checkoutState.billingAddress.full_name,
+          email: checkoutState.billingAddress.email,
+          contact: checkoutState.billingAddress.phone,
+        },
+      };
+
+      const paymentObject = new window.Razorpay(options);
+      paymentObject.open();
+      setLoading(false); // Modal is open, stop loading indicator
+
+      paymentObject.on('payment.failed', function (response) {
+        setError(`Payment Failed: ${response.error.description}`);
+        addToast({ message: `Payment Failed: ${response.error.reason}`, type: 'error' });
+        setLoading(false);
+      });
+
+    } catch (err) {
+      setError(err.message || 'An error occurred during payment.');
+      addToast({ message: err.message || 'Payment failed.', type: 'error' });
+      setLoading(false);
+    }
+  };
+
   const handlePlaceOrder = async () => {
     try {
       setLoading(true);
@@ -136,24 +222,25 @@ const Checkout = () => {
         throw new Error(validation.errors.join(', '));
       }
 
-      // Create order
+      // Create order in our DB first
       const order = await createOrder(orderData);
       orderActions.addOrder(order);
 
-      // Finalize manual order
-      const finalizedOrder = await finalizeManualOrder(order.id, paymentMethod);
-      
-      // Generate lucky draw if eligible
-      let luckyCode = null;
-      if (finalOrderAmount >= 3000) {
-        const drawEntry = await createLuckyDrawEntry(order.id, finalOrderAmount, user.id, checkoutState.billingAddress.full_name, checkoutState.billingAddress.phone);
-        if (drawEntry) luckyCode = drawEntry.code;
+      // Proceed to payment
+      if (paymentMethod === PAYMENT_METHODS.PREPAID) {
+        await handlePrepaidOrder(order, finalOrderAmount);
+        // setLoading is handled inside handlePrepaidOrder
+      } else { // COD
+        await finalizeManualOrder(order.id, paymentMethod);
+        let luckyCode = null;
+        if (finalOrderAmount >= 3000 && isEligibleForDraw) {
+          const drawEntry = await createLuckyDrawEntry(order.id, finalOrderAmount, user.id, checkoutState.billingAddress.full_name, checkoutState.billingAddress.phone);
+          if (drawEntry) luckyCode = drawEntry.code;
+        }
+        clearCart();
+        addToast({ message: 'Order placed successfully!', type: 'success' });
+        navigate(`/order-confirmation/${order.id}`);
       }
-
-      clearCart();
-      
-      addToast({ message: 'Order placed successfully!', type: 'success' });
-      navigate(luckyCode ? '/lucky-draw' : '/orders');
     } catch (err) {
       const message = err.message || 'Failed to process order';
       setError(message);
@@ -472,7 +559,7 @@ const Checkout = () => {
                   />
                   <div>
                     <p className="font-semibold">Prepaid (UPI / Cards / NetBanking)</p>
-                    <p className="text-sm text-gray-600">We will share a payment link via WhatsApp.</p>
+                    <p className="text-sm text-gray-600">Pay securely with Razorpay.</p>
                   </div>
                 </label>
                 <label className={`flex items-start p-4 border rounded-lg ${totals.subtotal > 1000 ? 'cursor-not-allowed bg-gray-50 opacity-60' : 'cursor-pointer hover:bg-gray-50'}`}>
