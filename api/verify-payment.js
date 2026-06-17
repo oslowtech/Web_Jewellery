@@ -31,28 +31,28 @@ export default async function handler(req, res) {
       try { body = JSON.parse(body); } catch (e) {}
     }
 
-    const { orderId, razorpay_order_id, razorpay_payment_id, razorpay_signature } = body || {};
+    const { orderId, orderIdRzp, paymentId, signature } = body || {};
 
-    if (!orderId || !razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+    if (!orderId || !orderIdRzp || !paymentId || !signature) {
       console.error('Missing fields. Received body:', JSON.stringify(body, null, 2));
       
       const missing = [];
       if (!orderId) missing.push('orderId');
-      if (!razorpay_order_id) missing.push('razorpay_order_id');
-      if (!razorpay_payment_id) missing.push('razorpay_payment_id');
-      if (!razorpay_signature) missing.push('razorpay_signature');
+      if (!orderIdRzp) missing.push('orderIdRzp');
+      if (!paymentId) missing.push('paymentId');
+      if (!signature) missing.push('signature');
 
       return res.status(400).json({ error: `Missing payment verification fields: ${missing.join(', ')}` });
     }
 
-    const signatureBody = razorpay_order_id + '|' + razorpay_payment_id;
+    const signatureBody = orderIdRzp + '|' + paymentId;
 
     const expectedSignature = crypto
       .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET || process.env.VITE_RAZORPAY_KEY_SECRET)
       .update(signatureBody.toString())
       .digest('hex');
 
-    if (expectedSignature !== razorpay_signature) {
+    if (expectedSignature !== signature) {
       return res.status(400).json({ success: false, error: 'Invalid signature' });
     }
 
@@ -62,8 +62,8 @@ export default async function handler(req, res) {
       .update({
         payment_status: 'completed',
         status: 'processing',
-        razorpay_payment_id: razorpay_payment_id,
-        razorpay_order_id: razorpay_order_id,
+        razorpay_payment_id: paymentId,
+        razorpay_order_id: orderIdRzp,
         updated_at: new Date().toISOString(),
       })
       .eq('id', orderId)

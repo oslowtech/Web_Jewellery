@@ -137,8 +137,8 @@ const Checkout = () => {
             if (!order || !order.id) {
               throw new Error("Local order ID is missing. Cannot verify payment.");
             }
-            if (!response || !response.razorpay_payment_id || !response.razorpay_order_id || !response.razorpay_signature) {
-              console.error("Invalid Razorpay response:", response);
+            if (!response || typeof response.razorpay_payment_id !== 'string' || typeof response.razorpay_order_id !== 'string' || typeof response.razorpay_signature !== 'string') {
+              console.error("Invalid or incomplete Razorpay response:", response);
               throw new Error("Incomplete Razorpay response. Cannot verify payment.");
             }
 
@@ -148,9 +148,9 @@ const Checkout = () => {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
-                razorpay_payment_id: response.razorpay_payment_id,
-                razorpay_order_id: response.razorpay_order_id,
-                razorpay_signature: response.razorpay_signature,
+                paymentId: response.razorpay_payment_id,
+                orderIdRzp: response.razorpay_order_id,
+                signature: response.razorpay_signature,
                 orderId: order.id, // Our internal DB order ID
               }),
             });
