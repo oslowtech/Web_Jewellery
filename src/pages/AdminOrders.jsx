@@ -695,10 +695,15 @@ const AdminOrders = () => {
                   + Add another item
                 </button>
               </div>
-              
-              <button onClick={handlePrintManualBill} disabled={!billItems.some(i => i.desc) || isUpdating} className="w-full rounded-xl bg-onyx px-5 py-3.5 font-bold text-white mt-8 transition-transform hover:bg-onyx/90 active:scale-95 disabled:opacity-50">
-                {isUpdating ? 'Saving & Generating...' : 'Save & Print Bill'}
-              </button>
+
+              <div className="grid grid-cols-2 gap-4 mt-8">
+                <button onClick={() => handleSaveAndPrintManualBill({ paymentStatus: 'paid' })} disabled={!billItems.some(i => i.desc) || isUpdating} className="w-full rounded-xl bg-gray-600 px-5 py-3.5 font-bold text-white transition-transform hover:bg-gray-700 active:scale-95 disabled:opacity-50">
+                  {isUpdating ? 'Saving...' : 'Save as Paid & Print'}
+                </button>
+                <button onClick={handleGenerateRazorpayLink} disabled={!billItems.some(i => i.desc) || isUpdating} className="w-full rounded-xl bg-rose px-5 py-3.5 font-bold text-white transition-transform hover:bg-rose/90 active:scale-95 disabled:opacity-50">
+                  {isUpdating ? 'Generating...' : 'Generate Razorpay Link'}
+                </button>
+              </div>
             </div>
 
             {manualInvoices.length > 0 && (
