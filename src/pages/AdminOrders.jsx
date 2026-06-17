@@ -774,7 +774,7 @@ const AdminOrders = () => {
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="font-semibold text-onyx">Order Status</h3>
                 <div className="flex items-center gap-4">
-                  {selectedOrder.payment_status === 'completed' && !['refunded', 'cancelled'].includes(selectedOrder.status) && (
+                  {selectedOrder.payment_status === 'completed' && !['refunded'].includes(selectedOrder.status) && (
                     <button
                       onClick={handleRefund}
                       className="text-red-600 hover:underline text-sm font-medium flex items-center gap-1"
