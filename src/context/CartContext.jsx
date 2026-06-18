@@ -179,29 +179,40 @@ export const CartProvider = ({ children }) => {
     if (!state.coupon) return 0;
     const { discount_type, discount_value, required_quantity, valid_product_ids } = state.coupon;
     
+    // Parse valid_product_ids safely
+    let validIds = [];
+    if (Array.isArray(valid_product_ids)) {
+      validIds = valid_product_ids;
+    } else if (typeof valid_product_ids === 'string' && valid_product_ids.trim() !== '') {
+      validIds = valid_product_ids.split(',').map(id => id.trim()).filter(Boolean);
+    }
+
+    // Filter to only items eligible for the coupon
+    const validItems = state.items.filter(item => {
+      const baseId = item.id.split('-')[0];
+      return validIds.length === 0 || validIds.includes(baseId);
+    });
+
+    if (validItems.length === 0) return 0;
+
     if (discount_type === 'fixed_amount') {
-      return Math.min(total, discount_value);
+      const eligibleTotal = validItems.reduce((sum, item) => sum + (item.discountPrice || item.price) * item.quantity, 0);
+      return Math.min(eligibleTotal, discount_value);
     }
     if (discount_type === 'percentage') {
-      return total * (discount_value / 100);
+      const eligibleTotal = validItems.reduce((sum, item) => sum + ((item.discountPrice || item.price) * item.quantity), 0);
+      return eligibleTotal * (discount_value / 100);
     }
     if (discount_type === 'bundle') {
-      const validItems = state.items.flatMap(item => {
-        const baseId = item.id.split('-')[0];
-        if (!valid_product_ids || valid_product_ids.length === 0 || valid_product_ids.includes(baseId)) {
-          return Array(item.quantity).fill(item.discountPrice || item.price);
-        }
-        return [];
-      });
-      
-      if (validItems.length >= required_quantity) {
-        validItems.sort((a, b) => b - a); // Group the highest priced eligible items into the bundle to maximize their savings
+      const validItemsExpanded = validItems.flatMap(item => Array(item.quantity).fill(item.discountPrice || item.price));
+      if (validItemsExpanded.length >= required_quantity) {
+        validItemsExpanded.sort((a, b) => b - a); // Group the highest priced eligible items into the bundle to maximize their savings
         let bundleDiscount = 0;
-        const numberOfBundles = Math.floor(validItems.length / required_quantity);
+        const numberOfBundles = Math.floor(validItemsExpanded.length / required_quantity);
         for (let i = 0; i < numberOfBundles; i++) {
           let bundleOriginalPrice = 0;
           for (let j = 0; j < required_quantity; j++) {
-            bundleOriginalPrice += validItems[i * required_quantity + j];
+            bundleOriginalPrice += validItemsExpanded[i * required_quantity + j];
           }
           bundleDiscount += Math.max(0, bundleOriginalPrice - discount_value);
         }
@@ -209,7 +220,7 @@ export const CartProvider = ({ children }) => {
       }
     }
     return 0;
-  }, [state.coupon, state.items, total]);
+  }, [state.coupon, state.items]);
 
   const value = {
     cart: state.items,
@@ -231,6 +242,39 @@ export const CartProvider = ({ children }) => {
       if (!isSupabaseConfigured || !supabase) throw new Error("Supabase is not configured.");
       const { data, error } = await supabase.from('coupons').select('*').eq('code', code.toUpperCase()).eq('is_active', true).single();
       if (error || !data) throw new Error("Invalid or expired coupon code.");
+      
+      let validIds = [];
+      if (Array.isArray(data.valid_product_ids)) {
+        validIds = data.valid_product_ids;
+      } else if (typeof data.valid_product_ids === 'string' && data.valid_product_ids.trim() !== '') {
+        validIds = data.valid_product_ids.split(',').map(id => id.trim()).filter(Boolean);
+      }
+      
+      if (validIds.length > 0) {
+        const hasValidProduct = state.items.some(item => {
+          const baseId = item.id.split('-')[0];
+          return validIds.includes(baseId);
+        });
+        if (!hasValidProduct) {
+          throw new Error("This coupon is not applicable to any items currently in your cart.");
+        }
+      }
+      
+      const currentTotal = state.items.reduce((sum, item) => sum + (item.discountPrice || item.price) * item.quantity, 0);
+      if (data.min_purchase_amount > 0 && currentTotal < data.min_purchase_amount) {
+        throw new Error(`A minimum purchase of ₹${data.min_purchase_amount} is required for this coupon.`);
+      }
+      
+      if (data.discount_type === 'bundle' && data.required_quantity > 0) {
+         const eligibleCount = state.items.reduce((sum, item) => {
+           const baseId = item.id.split('-')[0];
+           return (validIds.length === 0 || validIds.includes(baseId)) ? sum + item.quantity : sum;
+         }, 0);
+         if (eligibleCount < data.required_quantity) {
+           throw new Error(`Add at least ${data.required_quantity} eligible items to use this bundle offer.`);
+         }
+      }
+
       dispatch({ type: "SET_COUPON", payload: data });
       return data;
     },

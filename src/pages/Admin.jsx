@@ -413,6 +413,9 @@ const Admin = () => {
     setSaving(true);
     try {
       const payload = { ...couponForm, code: couponForm.code.toUpperCase() };
+      if (typeof payload.valid_product_ids === 'string') {
+        payload.valid_product_ids = payload.valid_product_ids.split(',').map(id => id.trim()).filter(Boolean);
+      }
       if (!payload.id) delete payload.id;
       await saveCoupon(payload);
       setSuccess("Coupon saved!");
