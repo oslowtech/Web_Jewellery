@@ -127,7 +127,7 @@ const InvoiceModal = ({ data, onClose }) => {
             </table>
 
             {/* Footer */}
-            <div className="flex mt-auto pt-2 items-start">
+              <div className="flex mt-2 pt-1 flex-1">
               <div className="flex-1 text-[8px] font-medium leading-tight">
                 <p className="font-bold mb-1 flex items-center gap-1 text-[9px]">◈ TERMS & CONDITIONS ◈</p>
                 <ol className="list-decimal pl-3 space-y-0.5">
@@ -136,7 +136,7 @@ const InvoiceModal = ({ data, onClose }) => {
                   <li>We do not entertain any warranty claim without bill.</li>
                 </ol>
               </div>
-              <div className="flex-[0.8] text-center flex flex-col items-center justify-center pt-0">
+                <div className="flex-[0.8] text-center flex flex-col items-center justify-start pt-0">
                 <Diamond size={16} className="mb-0.5 text-gray-800" />
                 <p className="font-serif text-lg italic leading-none font-medium">Thank You</p>
                 <p className="text-[7px] tracking-widest mt-1 font-bold">FOR SHOPPING WITH US</p>
