@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { Trash2, Edit } from "lucide-react";
+import { Trash2, Edit, MessageCircle } from "lucide-react";
 import usePageMeta from "../hooks/usePageMeta.js";
 import { useAuth } from "../context/AuthContext.jsx";
 import { deleteProduct, fetchProducts, saveProduct } from "../services/productService.js";
@@ -901,17 +901,37 @@ const Admin = () => {
              <h2 className="font-display text-xl">Recent Entries</h2>
              <div className="space-y-3 max-h-[600px] overflow-y-auto">
                {luckyDraws.map(draw => (
-                 <div key={draw.id} className="rounded-2xl border border-white/70 bg-cream p-4 shadow-sm flex justify-between items-center">
-                   <div><p className="font-bold text-onyx">{draw.code}</p><p className="text-sm font-medium">{draw.customer_name} ({draw.customer_phone})</p></div>
-                   <div>
-                     {draw.order_id && draw.orders?.status === 'cancelled' ? (
-                       <span className="bg-rose/10 text-rose px-2 py-1 rounded text-xs font-bold">Void</span>
-                     ) : draw.is_used ? (
-                       <span className="bg-stone/10 text-stone px-2 py-1 rounded text-xs font-bold">Redeemed</span>
-                     ) : (
-                       <span className="bg-emerald-100 text-emerald-800 px-2 py-1 rounded text-xs font-bold">Valid</span>
-                     )}
+                 <div key={draw.id} className="rounded-2xl border border-white/70 bg-cream p-4 shadow-sm flex flex-col">
+                   <div className="flex justify-between items-start">
+                     <div><p className="font-bold text-onyx">{draw.code}</p><p className="text-sm font-medium">{draw.customer_name} ({draw.customer_phone})</p></div>
+                     <div>
+                       {draw.order_id && draw.orders?.status === 'cancelled' ? (
+                         <span className="bg-rose/10 text-rose px-2 py-1 rounded text-xs font-bold">Void</span>
+                       ) : draw.is_used ? (
+                         <span className="bg-stone/10 text-stone px-2 py-1 rounded text-xs font-bold">Redeemed</span>
+                       ) : (
+                         <span className="bg-emerald-100 text-emerald-800 px-2 py-1 rounded text-xs font-bold">Valid</span>
+                       )}
+                     </div>
                    </div>
+                   {draw.customer_phone && !draw.is_used && (!draw.order_id || draw.orders?.status !== 'cancelled') && (
+                       <div className="mt-3 flex justify-end">
+                           <button
+                               onClick={() => {
+                                   const msg = `Hi ${draw.customer_name || 'there'},\n\nCongratulations! You have received a Lucky Draw entry from Nagneshwari Jewels.\n\nYour Lucky Draw Code is: *${draw.code}*\n\nPlease keep this code safe. We will announce the winners soon!`;
+                                   const phone = draw.customer_phone.replace(/\D/g, '').slice(-10);
+                                   if (phone.length >= 10) {
+                                       window.open(`https://wa.me/91${phone}?text=${encodeURIComponent(msg)}`, '_blank');
+                                   } else {
+                                       alert("Invalid phone number format.");
+                                   }
+                               }}
+                               className="flex items-center gap-1.5 px-3 py-1.5 bg-green-50 text-green-700 border border-green-200 hover:bg-green-100 rounded-lg text-xs font-bold transition-colors"
+                           >
+                               <MessageCircle size={14} /> Send via WhatsApp
+                           </button>
+                       </div>
+                   )}
                  </div>
                ))}
                {luckyDraws.length === 0 && <p className="text-sm text-stone italic">No lucky draw entries found.</p>}
