@@ -131,8 +131,11 @@ const OrderHistory = () => {
               <p className="text-gray-500">Loading orders...</p>
             </div>
           ) : orderState.error ? (
-            <div className="text-center py-12 bg-red-50 rounded-lg border border-red-200">
-              <p className="text-red-700 font-medium">Error loading orders: {orderState.error}</p>
+            <div className="text-center py-12 bg-white rounded-lg border border-gray-200 shadow-sm">
+              <p className="text-onyx font-medium text-lg">We're having trouble loading your orders</p>
+              <button onClick={() => window.location.reload()} className="mt-4 text-rose hover:underline text-sm font-medium">
+                Refresh Page
+              </button>
             </div>
           ) : filteredOrders.length === 0 ? (
             <div className="text-center py-12 bg-white rounded-lg border border-gray-200">

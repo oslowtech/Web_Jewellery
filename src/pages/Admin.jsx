@@ -835,10 +835,21 @@ const Admin = () => {
                 <input type="number" value={couponForm.required_quantity} onChange={e => setCouponForm({...couponForm, required_quantity: e.target.value})} placeholder="3" className="w-full rounded-xl border border-white/70 bg-white px-3 py-2" />
               </label>
             </div>
-            <label className="block space-y-1 text-sm">
-              <span>Valid Product IDs (Comma separated, empty for all)</span>
-              <input value={Array.isArray(couponForm.valid_product_ids) ? couponForm.valid_product_ids.join(', ') : couponForm.valid_product_ids} onChange={e => setCouponForm({...couponForm, valid_product_ids: e.target.value})} placeholder="JW3001, JW3002" className="w-full rounded-xl border border-white/70 bg-white px-3 py-2" />
+
+            <label className="flex items-center gap-2 text-sm mt-2 font-medium">
+              <input type="checkbox" checked={!couponForm.valid_product_ids || couponForm.valid_product_ids.length === 0} onChange={e => {
+                if (e.target.checked) setCouponForm({...couponForm, valid_product_ids: ""});
+                else setCouponForm({...couponForm, valid_product_ids: "JW"});
+              }} className="w-4 h-4 text-onyx rounded border-white/70" />
+              <span>Apply to all products</span>
             </label>
+            {(couponForm.valid_product_ids && couponForm.valid_product_ids.length > 0) && (
+              <label className="block space-y-1 text-sm">
+                <span>Valid Product IDs (Comma separated)</span>
+                <input value={Array.isArray(couponForm.valid_product_ids) ? couponForm.valid_product_ids.join(', ') : couponForm.valid_product_ids} onChange={e => setCouponForm({...couponForm, valid_product_ids: e.target.value})} placeholder="JW3001, JW3002" className="w-full rounded-xl border border-white/70 bg-white px-3 py-2" />
+              </label>
+            )}
+
             <label className="flex items-center gap-2 text-sm">
               <input type="checkbox" checked={couponForm.is_active} onChange={e => setCouponForm({...couponForm, is_active: e.target.checked})} />
               <span>Is Active</span>
@@ -857,7 +868,7 @@ const Admin = () => {
                   <div>
                     <p className="font-bold text-onyx">{coupon.code}</p>
                     <p className="text-xs font-medium text-stone mt-1">{coupon.discount_type}: {coupon.discount_value}</p>
-                    {coupon.valid_product_ids?.length > 0 && <p className="text-[10px] text-stone truncate max-w-[200px] mt-1">Valid on: {coupon.valid_product_ids.join(', ')}</p>}
+                    {coupon.valid_product_ids?.length > 0 ? <p className="text-[10px] text-stone truncate max-w-[200px] mt-1">Valid on: {coupon.valid_product_ids.join(', ')}</p> : <p className="text-[10px] text-stone mt-1">Valid on: All Products</p>}
                   </div>
                   <div className="flex flex-col gap-2">
                     <button onClick={() => setCouponForm({...coupon, valid_product_ids: coupon.valid_product_ids ? coupon.valid_product_ids.join(', ') : ''})} className="text-xs font-semibold text-onyx hover:underline">Edit</button>

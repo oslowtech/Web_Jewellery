@@ -91,9 +91,9 @@ const OrderConfirmation = () => {
   if (error) {
     return (
       <div className="mx-auto max-w-2xl px-4 py-10">
-        <div className="rounded-lg border border-red-200 bg-red-50 p-6">
-          <h1 className="text-xl font-semibold text-red-900">Order lookup failed</h1>
-          <p className="mt-2 text-sm text-red-700">{error}</p>
+        <div className="rounded-3xl border border-stone/20 bg-white p-8 text-center shadow-soft">
+          <h1 className="font-display text-2xl text-onyx">Unable to load order</h1>
+          <p className="mt-2 text-sm text-stone">We couldn't fetch the details for this order right now. Please try again later.</p>
           <Link to="/orders" className="mt-5 inline-flex rounded-lg bg-rose px-4 py-2 text-sm font-semibold text-cream">
             View orders
           </Link>
