@@ -225,7 +225,7 @@ const AdminOrders = () => {
     setSearchQuery('');
   };
 
-  const handlePrintOnlineOrder = (order) => {
+  const handlePrintOnlineOrder = async (order) => {
       const items = order.order_items.map(i => ({
           product_name: i.product_name,
           quantity: i.quantity,
@@ -245,6 +245,12 @@ const AdminOrders = () => {
       if (order.gift_wrap_fee > 0) { items.push({ product_name: "Gift Wrap", quantity: 1, price_per_unit: order.gift_wrap_fee, discount_price: order.gift_wrap_fee, total_price: order.gift_wrap_fee }); subtotal += order.gift_wrap_fee; }
       if (order.discount_amount > totalDiscount) { totalDiscount = order.discount_amount; } // Apply flat coupon discount to totals if applicable
 
+      let luckyCode = null;
+      if (order.total_amount >= 3000) {
+          const { data } = await supabase.from('lucky_draw_entries').select('code').eq('order_id', order.id).maybeSingle();
+          if (data) luckyCode = data.code;
+      }
+
       setInvoiceData({
           customerName: getCustomerName(order),
           mobile: order.billing_address?.phone || "N/A",
@@ -253,7 +259,8 @@ const AdminOrders = () => {
           date: new Date(order.created_at).toISOString().split('T')[0],
           items, subtotal, totalDiscount, 
           paymentMethod: order.cod_fee > 0 ? 'COD' : (order.razorpay_payment_id ? `Prepaid (Txn ID: ${order.razorpay_payment_id})` : 'Prepaid'),
-          grandTotal: order.total_amount
+          grandTotal: order.total_amount,
+          luckyDrawCode: luckyCode
       });
       setShowInvoice(true);
   };

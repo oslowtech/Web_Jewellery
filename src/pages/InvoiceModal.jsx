@@ -1,4 +1,4 @@
-import { MapPin, Phone, Mail, Globe, Diamond, X, Printer } from 'lucide-react';
+import { MapPin, Phone, Mail, Globe, Diamond, X, Printer, MessageCircle } from 'lucide-react';
 import logo from '../../logo.png';
 
 const InvoiceModal = ({ data, onClose }) => {
@@ -7,6 +7,8 @@ const InvoiceModal = ({ data, onClose }) => {
   while (rows.length < 10) {
     rows.push({ isEmpty: true });
   }
+  
+  const isAdminView = window.location.pathname.includes('admin');
 
   return (
     <div id="invoice-print-wrapper" className="fixed inset-0 z-[9999] bg-stone/90 overflow-y-auto flex flex-col items-center pb-20 print:block print:bg-white print:pb-0">
@@ -24,6 +26,22 @@ const InvoiceModal = ({ data, onClose }) => {
       <div className="print:hidden w-full max-w-5xl bg-onyx text-white p-4 flex justify-between items-center rounded-b-3xl shadow-lg mb-8 sticky top-0 z-50">
         <h2 className="font-display text-xl text-cream tracking-wide">Invoice Preview</h2>
         <div className="flex gap-4">
+          {isAdminView && data.luckyDrawCode && data.mobile && data.mobile !== 'N/A' && (
+             <button
+                onClick={() => {
+                    const msg = `Hi ${data.customerName || 'there'},\n\nThank you for shopping at Nagneshwari Jewels!\n\nYour Lucky Draw Code is: *${data.luckyDrawCode}*\n\nPlease keep this code safe. We will announce the winners soon!`;
+                    const phoneStr = data.mobile.replace(/\D/g, '').slice(-10);
+                    if (phoneStr.length >= 10) {
+                        window.open(`https://wa.me/91${phoneStr}?text=${encodeURIComponent(msg)}`, '_blank');
+                    } else {
+                        alert("Invalid phone number format.");
+                    }
+                }}
+                className="bg-green-600 px-6 py-2.5 rounded-xl flex items-center gap-2 font-bold hover:bg-green-700 transition-colors shadow-md text-white"
+             >
+                <MessageCircle size={18} /> Send Code on WA
+             </button>
+          )}
           <button onClick={() => window.print()} className="bg-rose px-6 py-2.5 rounded-xl flex items-center gap-2 font-bold hover:bg-rose/90 transition-colors shadow-md">
             <Printer size={18} /> Print / Save as PDF
           </button>

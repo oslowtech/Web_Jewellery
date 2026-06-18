@@ -82,6 +82,7 @@ const OrderConfirmation = () => {
         items, subtotal, totalDiscount,
         grandTotal: order.total_amount,
         paymentMethod: order.cod_fee > 0 ? 'COD' : 'Prepaid',
+        luckyDrawCode: luckyDraw ? luckyDraw.code : null
     });
     setShowInvoice(true);
   };
