@@ -1,4 +1,4 @@
-﻿﻿import { useState, useEffect } from 'react';
+﻿﻿﻿﻿import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronDown, X, Trash2, RefreshCw, Copy } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
@@ -16,6 +16,7 @@ const ORDER_STATUS_COLORS = {
   shipped: 'bg-indigo-100 text-indigo-800 border-indigo-300',
   delivered: 'bg-green-100 text-green-800 border-green-300',
   cancelled: 'bg-red-100 text-red-800 border-red-300',
+  processing_refund: 'bg-pink-100 text-pink-800 border-pink-300',
   refunded: 'bg-gray-100 text-gray-800 border-gray-300'
 };
 
@@ -33,6 +34,7 @@ const ORDER_STATUSES = [
   'shipped',
   'delivered',
   'cancelled',
+  'processing_refund',
   'refunded'
 ];
 
@@ -214,52 +216,6 @@ const AdminOrders = () => {
     }
   };
 
-  const handleRefund = async () => {
-    if (!selectedOrder || !selectedOrder.razorpay_payment_id) {
-      addToast({ message: 'Order has no payment ID to refund.', type: 'error' });
-      return;
-    }
-
-    if (!window.confirm(`Are you sure you want to refund ${formatPrice(selectedOrder.total_amount)} for order ${selectedOrder.order_number}? This action is irreversible via this panel.`)) {
-      return;
-    }
-
-    setIsUpdating(true);
-    try {
-      const response = await fetch('/api/refund-payment', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          payment_id: selectedOrder.razorpay_payment_id,
-          amount: selectedOrder.total_amount,
-          order_id: selectedOrder.id,
-        }),
-      });
-
-      let result;
-      try {
-        result = await response.json();
-      } catch (jsonError) {
-        throw new Error(`Server responded with non-JSON or empty response. Status: ${response.status}, Error: ${jsonError.message}`);
-      }
-
-      if (!response.ok || !result.success) {
-        throw new Error(result.error || 'Refund failed on the server.');
-      }
-
-      addToast({ message: 'Refund processed successfully via Razorpay!', type: 'success' });
-      
-      // Update local state and close modal
-      const updatedOrders = orders.map(o => (o.id === selectedOrder.id ? { ...o, status: 'refunded', payment_status: 'refunded' } : o));
-      setOrders(updatedOrders);
-      setShowDetailModal(false);
-    } catch (err) {
-      addToast({ message: `Refund failed: ${err.message}`, type: 'error' });
-    } finally {
-      setIsUpdating(false);
-    }
-  };
-
   const clearFilters = () => {
     setStatusFilter(null);
     setPaymentStatusFilter(null);
@@ -295,7 +251,7 @@ const AdminOrders = () => {
           invoiceNo: order.order_number,
           date: new Date(order.created_at).toISOString().split('T')[0],
           items, subtotal, totalDiscount, 
-          paymentMethod: order.cod_fee > 0 ? 'COD' : 'Prepaid',
+          paymentMethod: order.cod_fee > 0 ? 'COD' : (order.razorpay_payment_id ? `Prepaid (Txn ID: ${order.razorpay_payment_id})` : 'Prepaid'),
           grandTotal: order.total_amount
       });
       setShowInvoice(true);
@@ -422,6 +378,19 @@ const AdminOrders = () => {
         addToast({ message: `Failed to generate link: ${err.message}`, type: 'error' });
     } finally {
         setIsUpdating(false);
+    }
+  };
+
+  const handleUpdateManualInvoiceStatus = async (invoice, newStatus) => {
+    setIsUpdating(true);
+    try {
+      await saveManualInvoice({ id: invoice.id, paymentStatus: newStatus });
+      addToast({ message: `Invoice status updated to ${newStatus}`, type: 'success' });
+      loadManualInvoices(); // Refresh the list
+    } catch (err) {
+      addToast({ message: `Failed to update status: ${err.message}`, type: 'error' });
+    } finally {
+      setIsUpdating(false);
     }
   };
 
@@ -752,18 +721,24 @@ const AdminOrders = () => {
                       </div>
                       <div className="text-right flex flex-col items-end gap-2">
                         <p className="font-bold text-onyx">{formatPrice(Number(inv.grand_total))}</p>
-                        <span className={`inline-block px-2 py-1 rounded text-xs font-medium ${
-                          inv.payment_status === 'paid' ? 'bg-green-100 text-green-800' :
-                          inv.payment_status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                          'bg-gray-100 text-gray-800'
-                        }`}>
-                          {inv.payment_status || 'unpaid'}
-                        </span>
+                        <select
+                          value={inv.payment_status || 'pending'}
+                          onChange={(e) => handleUpdateManualInvoiceStatus(inv, e.target.value)}
+                          disabled={isUpdating}
+                          className={`px-2 py-1 border border-gray-200 rounded text-xs font-medium outline-none cursor-pointer ${
+                            inv.payment_status === 'paid' ? 'bg-green-50 text-green-800' :
+                            inv.payment_status === 'pending' ? 'bg-yellow-50 text-yellow-800' :
+                            'bg-gray-50 text-gray-800'
+                          }`}
+                        >
+                          <option value="pending" className="bg-white text-gray-800">Pending / Unpaid</option>
+                          <option value="paid" className="bg-white text-gray-800">Paid</option>
+                        </select>
                         <button onClick={() => {
                           setInvoiceData({
                             customerName: inv.customer_name, mobile: inv.mobile, address: inv.address, invoiceNo: inv.invoice_number, 
                             date: inv.date, items: inv.items, subtotal: inv.subtotal, totalDiscount: inv.total_discount, 
-                            grandTotal: inv.grand_total, paymentMethod: inv.payment_status === 'paid' ? (inv.razorpay_payment_link_id ? 'Razorpay' : 'Cash/Other') : 'Pending'
+                            grandTotal: inv.grand_total, paymentMethod: inv.payment_status === 'paid' ? (inv.razorpay_payment_id ? `Razorpay (Txn ID: ${inv.razorpay_payment_id})` : 'Cash/Other') : 'Pending'
                           });
                           setShowInvoice(true);
                         }} className="text-sm font-medium text-rose hover:underline">View / Print</button>
@@ -807,15 +782,6 @@ const AdminOrders = () => {
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="font-semibold text-onyx">Order Status</h3>
                 <div className="flex items-center gap-4">
-                  {selectedOrder.payment_status === 'completed' && !['refunded'].includes(selectedOrder.status) && (
-                    <button
-                      onClick={handleRefund}
-                      className="text-red-600 hover:underline text-sm font-medium flex items-center gap-1"
-                      disabled={isUpdating}
-                    >
-                      <RefreshCw size={14} /> {isUpdating ? 'Refunding...' : 'Process Refund'}
-                    </button>
-                  )}
                   <button
                     onClick={() => {
                       setNewStatus(selectedOrder.status);
