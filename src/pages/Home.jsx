@@ -216,7 +216,14 @@ const Home = () => {
             </Link>
           }
         />
-        <ProductGrid products={featured} loading={loading} />
+        <motion.div
+          key={featured.map((p) => p.id).join("-")}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.8 }}
+        >
+          <ProductGrid products={featured} loading={loading} />
+        </motion.div>
       </section>
 
       <section className="space-y-5">
@@ -229,7 +236,14 @@ const Home = () => {
             </Link>
           }
         />
-        <ProductGrid products={womensProducts} loading={loading} />
+        <motion.div
+          key={womensProducts.map((p) => p.id).join("-")}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.8 }}
+        >
+          <ProductGrid products={womensProducts} loading={loading} />
+        </motion.div>
       </section>
 
       <section className="space-y-5">
@@ -242,7 +256,14 @@ const Home = () => {
             </Link>
           }
         />
-        <ProductGrid products={mensProducts} loading={loading} />
+        <motion.div
+          key={mensProducts.map((p) => p.id).join("-")}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.8 }}
+        >
+          <ProductGrid products={mensProducts} loading={loading} />
+        </motion.div>
       </section>
 
       <section className="space-y-5">
@@ -255,7 +276,14 @@ const Home = () => {
             </Link>
           }
         />
-        <ProductGrid products={newArrivals} loading={loading} />
+        <motion.div
+          key={newArrivals.map((p) => p.id).join("-")}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.8 }}
+        >
+          <ProductGrid products={newArrivals} loading={loading} />
+        </motion.div>
       </section>
 
       <section className="space-y-5">
@@ -283,7 +311,14 @@ const Home = () => {
             </Link>
           }
         />
-        <ProductGrid products={bestSellers} loading={loading} />
+        <motion.div
+          key={bestSellers.map((p) => p.id).join("-")}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.8 }}
+        >
+          <ProductGrid products={bestSellers} loading={loading} />
+        </motion.div>
       </section>
 
       <AnimatePresence>
