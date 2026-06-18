@@ -137,6 +137,12 @@ const InvoiceModal = ({ data, onClose }) => {
                         <span className="font-bold">{data.paymentMethod}</span>
                     </div>
                   )}
+                  {data.luckyDrawCode && (
+                    <div className="flex justify-between border-b border-black p-1 text-[9px]">
+                        <span className="font-bold">LUCKY DRAW CODE</span>
+                        <span className="font-bold">{data.luckyDrawCode}</span>
+                    </div>
+                  )}
                 </div>
                 <div className="mt-4 border-t border-dashed border-gray-500 pt-1 text-center text-[8px] w-48 ml-auto font-bold text-gray-600">AUTHORIZED SIGNATURE</div>
               </div>

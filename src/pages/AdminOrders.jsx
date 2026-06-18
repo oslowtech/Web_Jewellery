@@ -7,6 +7,7 @@ import { fetchAllOrdersForAdmin, updateOrderStatusAdmin, saveManualInvoice, fetc
 import { formatPrice } from '../utils/format.js';
 import { supabase } from '../lib/supabase.js';
 import InvoiceModal from './InvoiceModal.jsx';
+import { createManualLuckyDrawEntry } from '../services/luckyDrawService.js';
 
 const ORDER_STATUS_COLORS = {
   pending: 'bg-yellow-100 text-yellow-800 border-yellow-300',
@@ -275,6 +276,18 @@ const AdminOrders = () => {
     });
 
     setIsUpdating(true);
+    
+    let luckyCode = null;
+    if (options.paymentStatus === 'paid' && subtotal - totalDiscount >= 3000 && billForm.mobile && billForm.mobile.length >= 10) {
+      try {
+        const entry = await createManualLuckyDrawEntry(billForm.customerName || "Walk-in", billForm.mobile, subtotal - totalDiscount);
+        if (entry) luckyCode = entry.code;
+      } catch (err) {
+        const { data } = await supabase.from('lucky_draw_entries').select('code').eq('customer_phone', billForm.mobile).maybeSingle();
+        if (data) luckyCode = data.code;
+      }
+    }
+
     try {
       const saved = await saveManualInvoice({
         customerName: billForm.customerName || "Walk-in Customer",
@@ -298,6 +311,7 @@ const AdminOrders = () => {
         totalDiscount: saved.total_discount,
         grandTotal: saved.grand_total,
         paymentMethod: options.paymentStatus === 'paid' ? 'Cash/Other' : 'Unpaid',
+        luckyDrawCode: luckyCode
       });
       setShowInvoice(true);
       
@@ -386,6 +400,16 @@ const AdminOrders = () => {
     try {
       await saveManualInvoice({ id: invoice.id, paymentStatus: newStatus });
       addToast({ message: `Invoice status updated to ${newStatus}`, type: 'success' });
+
+      if (newStatus === 'paid' && Number(invoice.grand_total) >= 3000 && invoice.mobile && invoice.mobile.length >= 10) {
+        try {
+          const entry = await createManualLuckyDrawEntry(invoice.customer_name, invoice.mobile, Number(invoice.grand_total));
+          if (entry) addToast({ message: `Lucky Draw entry generated: ${entry.code}`, type: 'success' });
+        } catch (e) {
+          // Silently ignore if already exists or fails
+        }
+      }
+
       loadManualInvoices(); // Refresh the list
     } catch (err) {
       addToast({ message: `Failed to update status: ${err.message}`, type: 'error' });
@@ -734,11 +758,17 @@ const AdminOrders = () => {
                           <option value="pending" className="bg-white text-gray-800">Pending / Unpaid</option>
                           <option value="paid" className="bg-white text-gray-800">Paid</option>
                         </select>
-                        <button onClick={() => {
+                        <button onClick={async () => {
+                          let luckyCode = null;
+                          if (inv.payment_status === 'paid' && Number(inv.grand_total) >= 3000 && inv.mobile) {
+                            const { data } = await supabase.from('lucky_draw_entries').select('code').eq('customer_phone', inv.mobile).maybeSingle();
+                            if (data) luckyCode = data.code;
+                          }
                           setInvoiceData({
                             customerName: inv.customer_name, mobile: inv.mobile, address: inv.address, invoiceNo: inv.invoice_number, 
                             date: inv.date, items: inv.items, subtotal: inv.subtotal, totalDiscount: inv.total_discount, 
-                            grandTotal: inv.grand_total, paymentMethod: inv.payment_status === 'paid' ? (inv.razorpay_payment_id ? `Razorpay (Txn ID: ${inv.razorpay_payment_id})` : 'Cash/Other') : 'Pending'
+                            grandTotal: inv.grand_total, paymentMethod: inv.payment_status === 'paid' ? (inv.razorpay_payment_id ? `Razorpay (Txn ID: ${inv.razorpay_payment_id})` : 'Cash/Other') : 'Pending',
+                            luckyDrawCode: luckyCode
                           });
                           setShowInvoice(true);
                         }} className="text-sm font-medium text-rose hover:underline">View / Print</button>

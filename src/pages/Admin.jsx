@@ -9,7 +9,7 @@ import { formatPrice } from "../utils/format.js";
 import { removeStorage } from "../utils/storage.js";
 import { supabase, isSupabaseConfigured } from "../lib/supabase.js";
 import { fetchSlides, saveSlide, deleteSlide, fetchCoupons, saveCoupon, deleteCoupon } from "../services/contentService.js";
-import { getAllLuckyDrawEntries, verifyAndUseCode, createManualLuckyDrawEntry } from "../services/luckyDrawService.js";
+import { getAllLuckyDrawEntries, verifyAndUseCode } from "../services/luckyDrawService.js";
 
 const createEmptyForm = () => ({
   id: "",
@@ -77,8 +77,6 @@ const Admin = () => {
   
   const [luckyDraws, setLuckyDraws] = useState([]);
   const [verifyCode, setVerifyCode] = useState("");
-  const [manualDrawForm, setManualDrawForm] = useState({ name: "", phone: "", amount: "" });
-  const [generatedQR, setGeneratedQR] = useState(null);
   
 
   const categories = useMemo(() => {
@@ -443,22 +441,6 @@ const Admin = () => {
         await deleteCoupon(id);
         loadSlidesAndCoupons();
       } catch (err) { setError(err.message); }
-    }
-  };
-
-  const handleGenerateOffline = async (e) => {
-    e.preventDefault();
-    setSaving(true);
-    setError("");
-    try {
-      const entry = await createManualLuckyDrawEntry(manualDrawForm.name, manualDrawForm.phone, Number(manualDrawForm.amount));
-      setGeneratedQR(entry);
-      setManualDrawForm({ name: "", phone: "", amount: "" });
-      loadLuckyDraws();
-    } catch (err) {
-      setError(err.message || "Failed to generate entry.");
-    } finally {
-      setSaving(false);
     }
   };
 
@@ -914,37 +896,6 @@ const Admin = () => {
               </div>
             </div>
 
-            <div className="space-y-4 rounded-3xl border border-white/70 bg-white/80 p-6 shadow-soft">
-              <h2 className="font-display text-xl">Generate Offline Entry</h2>
-              <form onSubmit={handleGenerateOffline} className="space-y-3">
-                <input type="text" placeholder="Customer Name" required value={manualDrawForm.name} onChange={e => setManualDrawForm({...manualDrawForm, name: e.target.value})} className="w-full rounded-xl border border-white/70 bg-white px-3 py-2" />
-                <input type="text" placeholder="Customer Phone" required value={manualDrawForm.phone} onChange={e => setManualDrawForm({...manualDrawForm, phone: e.target.value})} className="w-full rounded-xl border border-white/70 bg-white px-3 py-2" />
-                <input type="number" placeholder="Purchase Amount (Min ₹3000)" required min="3000" value={manualDrawForm.amount} onChange={e => setManualDrawForm({...manualDrawForm, amount: e.target.value})} className="w-full rounded-xl border border-white/70 bg-white px-3 py-2" />
-                <button type="submit" disabled={saving} className="w-full rounded-xl bg-onyx px-5 py-2 text-sm text-white disabled:opacity-50">Generate QR</button>
-              </form>
-              {generatedQR && (
-                <div className="mt-4 p-4 border border-rose/30 bg-rose/5 rounded-2xl text-center">
-                  <p className="font-bold text-lg mb-2">{generatedQR.code}</p>
-                  <img src={`https://quickchart.io/qr?text=${generatedQR.code}&size=200&margin=2`} alt="QR Code" className="w-32 h-32 mx-auto rounded-xl mb-3 p-2 bg-white shadow-sm" crossOrigin="anonymous" />
-                  <button onClick={async () => {
-                    try {
-                      const response = await fetch(`https://quickchart.io/qr?text=${generatedQR.code}&size=400&margin=2`);
-                      const blob = await response.blob();
-                      const url = window.URL.createObjectURL(blob);
-                      const a = document.createElement('a');
-                      a.href = url;
-                      a.download = `LuckyDraw-${generatedQR.code}.png`;
-                      document.body.appendChild(a);
-                      a.click();
-                      document.body.removeChild(a);
-                      window.URL.revokeObjectURL(url);
-                    } catch(e) {
-                      window.open(`https://quickchart.io/qr?text=${generatedQR.code}&size=400&margin=2`, '_blank');
-                    }
-                  }} className="text-sm bg-white border border-stone/20 px-4 py-2 rounded-full hover:bg-stone/5 transition-colors">Download QR</button>
-                </div>
-              )}
-            </div>
           </div>
           <div className="space-y-4 rounded-3xl border border-white/70 bg-white/80 p-6 shadow-soft">
              <h2 className="font-display text-xl">Recent Entries</h2>
