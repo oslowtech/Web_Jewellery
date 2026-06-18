@@ -128,13 +128,16 @@ const InvoiceModal = ({ data, onClose }) => {
 
             {/* Footer */}
               <div className="flex mt-2 pt-1 flex-1">
-              <div className="flex-1 text-[8px] font-medium leading-tight">
-                <p className="font-bold mb-1 flex items-center gap-1 text-[9px]">◈ TERMS & CONDITIONS ◈</p>
-                <ol className="list-decimal pl-3 space-y-0.5">
-                  <li>Item priced above 500 are liable to 6months to 1yr of warranty.</li>
-                  <li>We are not responsible for any damage after delivery.</li>
-                  <li>We do not entertain any warranty claim without bill.</li>
-                </ol>
+              <div className="flex-1 flex flex-col justify-between text-[8px] font-medium leading-tight">
+                <div>
+                  <p className="font-bold mb-1 flex items-center gap-1 text-[9px]">◈ TERMS & CONDITIONS ◈</p>
+                  <ol className="list-decimal pl-3 space-y-0.5">
+                    <li>Item priced above 500 are liable to 6months to 1yr of warranty.</li>
+                    <li>We are not responsible for any damage after delivery.</li>
+                    <li>We do not entertain any warranty claim without bill.</li>
+                  </ol>
+                </div>
+                <div className="mt-2 border-t border-dashed border-gray-500 pt-1 text-center text-[8px] w-48 font-bold text-gray-600">AUTHORIZED SIGNATURE</div>
               </div>
                 <div className="flex-[0.8] text-center flex flex-col items-center justify-start pt-0">
                 <Diamond size={16} className="mb-0.5 text-gray-800" />
@@ -162,7 +165,6 @@ const InvoiceModal = ({ data, onClose }) => {
                     </div>
                   )}
                 </div>
-                <div className="mt-2 border-t border-dashed border-gray-500 pt-1 text-center text-[8px] w-48 ml-auto font-bold text-gray-600">AUTHORIZED SIGNATURE</div>
               </div>
             </div>
           </div>
