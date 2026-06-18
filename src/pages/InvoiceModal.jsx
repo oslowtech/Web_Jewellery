@@ -66,17 +66,17 @@ const InvoiceModal = ({ data, onClose }) => {
             {/* Header Section */}
             <div className="flex items-center justify-between pb-2 border-b border-black">
               <div className="flex-1 text-center">
-                <img src={logo} alt="Nagneshwari Logo" className="h-24 mx-auto mb-2 object-contain grayscale" />
+                <img src={logo} alt="Nagneshwari Logo" className="h-14 mx-auto mb-1 object-contain grayscale" />
                 <p className="text-[7px] mt-1 font-medium italic text-gray-700">Timeless Elegance. Crafted for Generations.</p>
               </div>
-              <div className="flex-1 border-l border-r border-black px-4 flex flex-col gap-1.5 text-[9px]">
+              <div className="flex-1 border-l border-r border-black px-4 flex flex-col gap-1 text-[9px]">
                 <p className="flex items-start gap-2"><MapPin size={10} className="shrink-0 mt-0.5" /> <span>Giri Complex, Kursi Road,<br />Lucknow - 226022</span></p>
                 <p className="flex items-center gap-2"><Phone size={10} className="shrink-0" /> 7007810114</p>
                 <p className="flex items-center gap-2"><Mail size={10} className="shrink-0" /> schirgsoni20@gmail.com</p>
                 <p className="flex items-center gap-2"><Globe size={10} className="shrink-0" /> www.nagneshwari.in</p>
               </div>
               <div className="flex-[0.8] text-center px-4">
-                <h2 className="font-serif text-2xl tracking-widest mb-3 flex justify-center items-center gap-2">
+                <h2 className="font-serif text-xl tracking-widest mb-1.5 flex justify-center items-center gap-2">
                   <span className="text-xs">◈</span> INVOICE <span className="text-xs">◈</span>
                 </h2>
                 <div className="text-[10px] text-left space-y-2 font-medium">
@@ -113,7 +113,7 @@ const InvoiceModal = ({ data, onClose }) => {
               </thead>
               <tbody>
                 {rows.map((row, idx) => (
-                  <tr key={idx} className="text-center h-[14px]">
+                  <tr key={idx} className="text-center h-[12px]">
                     <td className="border-r border-black">{!row.isEmpty ? idx + 1 : ''}</td>
                     <td className="border-r border-black text-left px-2 truncate max-w-[200px]">{!row.isEmpty ? row.product_name : ''}</td>
                     <td className="border-r border-black font-medium">{!row.isEmpty ? row.quantity : ''}</td>
@@ -127,7 +127,7 @@ const InvoiceModal = ({ data, onClose }) => {
             </table>
 
             {/* Footer */}
-            <div className="flex mt-auto pt-1 items-end">
+            <div className="flex mt-auto pt-2 items-start">
               <div className="flex-1 text-[8px] font-medium leading-tight">
                 <p className="font-bold mb-1 flex items-center gap-1 text-[9px]">◈ TERMS & CONDITIONS ◈</p>
                 <ol className="list-decimal pl-3 space-y-0.5">
@@ -136,7 +136,7 @@ const InvoiceModal = ({ data, onClose }) => {
                   <li>We do not entertain any warranty claim without bill.</li>
                 </ol>
               </div>
-              <div className="flex-[0.8] text-center flex flex-col items-center justify-center pt-2">
+              <div className="flex-[0.8] text-center flex flex-col items-center justify-center pt-0">
                 <Diamond size={16} className="mb-0.5 text-gray-800" />
                 <p className="font-serif text-lg italic leading-none font-medium">Thank You</p>
                 <p className="text-[7px] tracking-widest mt-1 font-bold">FOR SHOPPING WITH US</p>
@@ -162,7 +162,7 @@ const InvoiceModal = ({ data, onClose }) => {
                     </div>
                   )}
                 </div>
-                <div className="mt-4 border-t border-dashed border-gray-500 pt-1 text-center text-[8px] w-48 ml-auto font-bold text-gray-600">AUTHORIZED SIGNATURE</div>
+                <div className="mt-2 border-t border-dashed border-gray-500 pt-1 text-center text-[8px] w-48 ml-auto font-bold text-gray-600">AUTHORIZED SIGNATURE</div>
               </div>
             </div>
           </div>
