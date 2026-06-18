@@ -34,6 +34,7 @@ const Home = () => {
   const [showPoster, setShowPoster] = useState(false);
   const [slides, setSlides] = useState([]);
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [randomizedOrder, setRandomizedOrder] = useState({});
 
   useEffect(() => {
     if (!hasShownPosterThisLoad) {
@@ -59,6 +60,25 @@ const Home = () => {
     return () => clearInterval(interval);
   }, [slides]);
 
+  // Shuffle product display order at random time intervals
+  useEffect(() => {
+    let timerId;
+    const shuffle = () => {
+      setRandomizedOrder(() => {
+        const newOrder = {};
+        products.forEach(p => {
+          newOrder[p.id] = Math.random();
+        });
+        return newOrder;
+      });
+      // Trigger the next shuffle after a random interval between 8 and 20 seconds
+      const nextInterval = Math.floor(Math.random() * 12000) + 8000;
+      timerId = setTimeout(shuffle, nextInterval);
+    };
+    if (products.length > 0) shuffle();
+    return () => clearTimeout(timerId);
+  }, [products]);
+
   const suggestions = useMemo(() => {
     if (!debouncedQuery) return [];
     return products
@@ -76,8 +96,9 @@ const Home = () => {
 
   const sortProducts = (list) => {
     return list.sort((a, b) => {
-      const orderA = Number(a.displayOrder ?? a.display_order ?? 0);
-      const orderB = Number(b.displayOrder ?? b.display_order ?? 0);
+      // Use the randomized order if available, fallback to database display_order
+      const orderA = randomizedOrder[a.id] ?? Number(a.displayOrder ?? a.display_order ?? 0);
+      const orderB = randomizedOrder[b.id] ?? Number(b.displayOrder ?? b.display_order ?? 0);
       if (orderA !== orderB) return orderA - orderB;
       return String(a.name).localeCompare(String(b.name));
     });
